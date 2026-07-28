@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>House Expense Tracker</title>
+  <meta name="description" content="Split household expenses fairly among housemates. Track spending, settle debts, and keep the peace." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="logo.png" />
+</head>
+<body>
+
+  <!-- ===== APP SHELL ===== -->
+  <div class="app-shell">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <img src="logo.png" alt="Boarding Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
+        </div>
+        <div class="logo-name">House Expense Tracker</div>
+      </div>
+
+      <div class="sidebar-month">
+        <span id="month-badge-sidebar"></span>
+      </div>
+
+      <nav class="sidebar-nav" role="navigation" aria-label="Main navigation">
+        <span class="nav-section-label">Overview</span>
+        <button class="tab-btn active" data-tab="dashboard" id="tab-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </button>
+
+        <span class="nav-section-label">Manage</span>
+        <button class="tab-btn" data-tab="expenses" id="tab-expenses">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Expenses
+        </button>
+        <button class="tab-btn" data-tab="members" id="tab-members">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Members
+        </button>
+
+        <span class="nav-section-label">Finance</span>
+        <button class="tab-btn" data-tab="settle" id="tab-settle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          Settle Up
+        </button>
+        <button class="tab-btn" data-tab="history" id="tab-history">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          History
+        </button>
+
+        <span class="nav-section-label admin-only">Admin</span>
+        <button class="tab-btn admin-only" data-tab="accounts" id="tab-accounts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          Accounts
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <!-- Logged-in user pill -->
+        <div class="sidebar-user" id="sidebar-user">
+          <div class="sidebar-user-avatar" id="sidebar-user-avatar">?</div>
+          <span class="sidebar-user-name" id="sidebar-user-name">Loading…</span>
+        </div>
+
+        <div class="sidebar-footer-actions">
+          <button class="btn-icon" id="export-btn" title="Export Data">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          </button>
+          <label class="btn-icon" for="import-file" title="Import Data" style="cursor:pointer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          </label>
+          <input type="file" id="import-file" accept=".json" style="display:none" />
+          <button class="btn-icon" id="change-pw-btn" title="Change Password">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </button>
+          <button class="btn-icon btn-logout" id="logout-btn" title="Sign Out">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ===== MAIN AREA ===== -->
+    <div class="main-area">
+
+      <!-- Top bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="logo-mark topbar-logo-mark">
+            <img src="logo.png" alt="Boarding Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
+          </div>
+          <span class="topbar-title" id="topbar-title">House Expense Tracker</span>
+        </div>
+        <div class="topbar-actions">
+          <span id="month-badge" class="hidden"></span>
+          <!-- Mobile: user avatar + logout (hidden on desktop) -->
+          <div class="topbar-user-mobile" id="topbar-user-mobile">
+            <button class="btn-icon" id="topbar-change-pw-btn" title="Change Password" style="width:30px; height:30px; margin-right:4px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </button>
+            <div class="topbar-user-avatar" id="topbar-user-avatar">?</div>
+            <button class="btn-icon btn-logout topbar-logout" id="topbar-logout-btn" title="Sign Out" aria-label="Sign Out">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main content -->
+      <main class="main-content">
+
+        <!-- DASHBOARD TAB -->
+        <section class="tab-panel active" id="panel-dashboard">
+          <div class="page-heading">
+            <h1>House Expense Tracker</h1>
+            <p>Track spending, balances, and recent activity at a glance.</p>
+          </div>
+          <div class="summary-cards" id="summary-cards"></div>
+          <div class="panel-grid">
+            <div class="card" id="balance-overview-card">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                Balance Overview
+              </h2>
+              <div id="balance-overview-list" class="balance-list"></div>
+            </div>
+            <div class="card" id="recent-expenses-card">
+              <h2 class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Recent Expenses
+              </h2>
+              <div id="recent-expenses-list"></div>
+            </div>
+          </div>
+          <button class="fab" id="fab-add" title="Add Expense">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </section>
+
+        <!-- EXPENSES TAB -->
+        <section class="tab-panel" id="panel-expenses">
+          <div class="page-heading">
+            <h1>Expenses</h1>
+            <p>All recorded expenses — filter, edit, or add new ones.</p>
+          </div>
+          <div class="panel-toolbar">
+            <div class="toolbar-filters">
+              <select id="filter-member" class="input-field input-sm">
+                <option value="">All Members</option>
+              </select>
+              <select id="filter-category" class="input-field input-sm">
+                <option value="">All Categories</option>
+                <option value="Groceries">🛒 Groceries</option>
+                <option value="Rent">🏠 Rent</option>
+                <option value="Utilities">⚡ Utilities</option>
+                <option value="Food">🍜 Food</option>
+                <option value="Transport">🚗 Transport</option>
+                <option value="Entertainment">🎮 Entertainment</option>
+                <option value="Other">📦 Other</option>
+              </select>
+              <input type="month" id="filter-month" class="input-field input-sm" />
+            </div>
+            <button class="btn btn-primary" id="add-expense-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Add Expense
+            </button>
+          </div>
+          <div id="expenses-list" class="expenses-list"></div>
+        </section>
+
+        <!-- MEMBERS TAB -->
+        <section class="tab-panel" id="panel-members">
+          <div class="page-heading">
+            <h1>Members</h1>
+            <p>Everyone living under the same roof.</p>
+          </div>
+
+          <div id="members-grid" class="members-grid"></div>
+        </section>
+
+        <!-- SETTLE UP TAB -->
+        <section class="tab-panel" id="panel-settle">
+          <div class="page-heading settle-header">
+            <h1>Settle Up</h1>
+            <p class="settle-subtitle">Minimum transactions to clear all debts this month.</p>
+          </div>
+          <div id="settle-transactions" class="settle-list"></div>
+          <div id="settle-actions" class="settle-actions"></div>
+        </section>
+
+        <!-- HISTORY TAB -->
+        <section class="tab-panel" id="panel-history">
+          <div class="page-heading">
+            <h1>History</h1>
+            <p>A record of all past settlements.</p>
+          </div>
+          <div id="history-list" class="history-list"></div>
+        </section>
+
+        <!-- ACCOUNTS TAB (Admin Only) -->
+        <section class="tab-panel admin-only" id="panel-accounts">
+          <div class="page-heading">
+            <h1>User Accounts</h1>
+            <p>Manage individuals who have access to the tracker.</p>
+          </div>
+          <div class="panel-toolbar">
+            <div></div>
+            <button class="btn btn-primary" id="add-account-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Create Account
+            </button>
+          </div>
+          <div id="accounts-list" class="expenses-list"></div>
+
+          <!-- Danger Zone — always visible to admin, never wiped by accounts-list renders -->
+          <div id="danger-zone" style="margin-top:28px">
+            <div class="danger-zone-card">
+              <div class="danger-zone-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;flex-shrink:0">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <div>
+                  <div class="danger-zone-title">Danger Zone</div>
+                  <div class="danger-zone-desc">Permanently erase all data and start fresh. This cannot be undone.</div>
+                </div>
+              </div>
+              <div class="danger-zone-items">
+                <div class="danger-zone-item">
+                  <div>
+                    <div class="danger-item-label">Reset Entire Database</div>
+                    <div class="danger-item-desc">Deletes all expenses, settlements, payment history, and member accounts. The admin login is preserved.</div>
+                  </div>
+                  <button class="btn-reset-db" id="reset-db-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px">
+                      <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+                    </svg>
+                    Reset Everything
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ===== MOBILE BOTTOM NAV ===== -->
+    <nav class="tab-nav-mobile" role="navigation" aria-label="Mobile navigation">
+      <button class="tab-btn active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        Home
+      </button>
+      <button class="tab-btn" data-tab="expenses">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Expenses
+      </button>
+      <button class="tab-btn" data-tab="members">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Members
+      </button>
+      <button class="tab-btn" data-tab="settle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        Settle
+      </button>
+      <button class="tab-btn" data-tab="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        History
+      </button>
+      <button class="tab-btn admin-only" data-tab="accounts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Accounts
+      </button>
+    </nav>
+
+  </div><!-- /app-shell -->
+
+  <!-- ========== MODALS ========== -->
+
+  <!-- Add/Edit Expense Modal -->
+  <div class="modal-overlay" id="expense-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="expense-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="expense-modal-title">Add Expense</h3>
+        <button class="btn-icon modal-close" id="expense-modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="expense-form" class="modal-form">
+        <input type="hidden" id="expense-id" />
+        <div class="form-group">
+          <label class="form-label" for="exp-desc">Description</label>
+          <input type="text" id="exp-desc" class="input-field" placeholder="e.g. Monthly groceries" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exp-amount">Amount (LKR)</label>
+            <input type="number" id="exp-amount" class="input-field" placeholder="0.00" min="0.01" step="0.01" inputmode="decimal" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-date">Date</label>
+            <input type="date" id="exp-date" class="input-field" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="exp-payer">Paid By</label>
+            <select id="exp-payer" class="input-field" required></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="exp-category">Category</label>
+            <select id="exp-category" class="input-field">
+              <option value="Groceries">🛒 Groceries</option>
+              <option value="Rent">🏠 Rent</option>
+              <option value="Utilities">⚡ Utilities</option>
+              <option value="Food">🍜 Food</option>
+              <option value="Transport">🚗 Transport</option>
+              <option value="Entertainment">🎮 Entertainment</option>
+              <option value="Other">📦 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Split Among</label>
+          <div id="split-checkboxes" class="checkbox-group"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="expense-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="expense-submit-btn">Save Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Member Modal -->
+  <div class="modal-overlay" id="member-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="member-modal-title">Add Member</h3>
+        <button class="btn-icon modal-close" id="member-modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="member-form" class="modal-form">
+        <div class="form-group">
+          <label class="form-label" for="member-name">Name</label>
+          <input type="text" id="member-name" class="input-field" placeholder="Friend's name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Avatar Color</label>
+          <div id="color-picker" class="color-picker"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="member-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Account Modal -->
+  <div class="modal-overlay" id="account-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="account-modal-title">Create Account</h3>
+        <button class="btn-icon modal-close" id="account-modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="account-form" class="modal-form">
+        <div class="form-group">
+          <label class="form-label" for="acc-username">Username</label>
+          <input type="text" id="acc-username" class="input-field" placeholder="Username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="acc-password">Password</label>
+          <input type="password" id="acc-password" class="input-field" placeholder="Password" required />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="account-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="account-submit-btn">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="changepw-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="changepw-modal-title">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title" id="changepw-modal-title">Change Password</h3>
+        <button class="btn-icon modal-close" id="changepw-modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="changepw-form" class="modal-form">
+        <div class="form-group">
+          <label class="form-label" for="new-password">New Password</label>
+          <input type="password" id="new-password" class="input-field" placeholder="Enter new password" required />
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="changepw-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="changepw-submit-btn">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirm-modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirm-title">Confirm</h3>
+      </div>
+      <p id="confirm-message" class="confirm-message"></p>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+  <script>
+    'use strict';
+
+    const AUTH_KEY = 'hb_token';
+    const USER_KEY = 'hb_user';
+
+    /* ── Auth guard: redirect to login if not authenticated ── */
+    (async function authGuard() {
+      const token = localStorage.getItem(AUTH_KEY);
+      if (!token) {
+        window.location.replace('/login.html');
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (!res.ok) throw new Error('invalid');
+        const { username } = await res.json();
+        setUserDisplay(username);
+        if (username === 'admin') {
+          document.body.classList.add('is-admin');
+        } else {
+          document.body.classList.remove('is-admin');
+        }
+      } catch {
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(USER_KEY);
+        window.location.replace('/login.html');
+      }
+    })();
+
+    /* ── Show logged-in user in sidebar + topbar ── */
+    function setUserDisplay(username) {
+      const avatarEl = document.getElementById('sidebar-user-avatar');
+      const nameEl   = document.getElementById('sidebar-user-name');
+      const tbAvatar = document.getElementById('topbar-user-avatar');
+      if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
+      if (nameEl)   nameEl.textContent   = username;
+      if (tbAvatar) tbAvatar.textContent = username.charAt(0).toUpperCase();
+    }
+
+    /* ── Logout ── */
+    document.addEventListener('DOMContentLoaded', () => {
+      const logoutBtn = document.getElementById('logout-btn');
+      const topbarLogoutBtn = document.getElementById('topbar-logout-btn');
+
+      async function doLogout() {
+        const token = localStorage.getItem(AUTH_KEY);
+        try {
+          await fetch('/api/auth/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        } catch { /* ignore network errors */ }
+        localStorage.removeItem(AUTH_KEY);
+        localStorage.removeItem(USER_KEY);
+        window.location.replace('/login.html');
+      }
+
+      if (logoutBtn) logoutBtn.addEventListener('click', doLogout);
+      if (topbarLogoutBtn) topbarLogoutBtn.addEventListener('click', doLogout);
+
+      /* ── Topbar title sync ── */
+      const TAB_TITLES = {
+        dashboard: 'House Expense Tracker',
+        expenses:  'Expenses',
+        members:   'Members',
+        settle:    'Settle Up',
+        history:   'History',
+        accounts:  'User Accounts'
+      };
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const el = document.getElementById('topbar-title');
+          if (el) el.textContent = TAB_TITLES[btn.dataset.tab] || '';
+        });
+      });
+
+      /* ── Month badge sidebar sync ── */
+      const mbSidebar = document.getElementById('month-badge-sidebar');
+      const mbMain    = document.getElementById('month-badge');
+      if (mbSidebar && mbMain) {
+        const observer = new MutationObserver(() => {
+          mbSidebar.textContent = mbMain.textContent;
+        });
+        observer.observe(mbMain, { childList: true, subtree: true, characterData: true });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/api/auth.js"
+    },
+    {
+      "src": "/api/expenses/(.*)",
+      "dest": "/api/expenses.js"
+    },
+    {
+      "src": "/api/members/(.*)",
+      "dest": "/api/members.js"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users.js"
+    },
+    {
+      "src": "/api/settlements/(.*)",
+      "dest": "/api/settlements.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/login.html",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/login",
+      "dest": "/login.html"
+    },
+    {
+      "src": "/(.*\\.(css|js|png|jpg|svg|ico|json))",
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
