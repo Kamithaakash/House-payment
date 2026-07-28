@@ -452,6 +452,7 @@
         });
         if (!res.ok) throw new Error('invalid');
         const { username } = await res.json();
+        localStorage.setItem(USER_KEY, username);
         setUserDisplay(username);
         if (username === 'admin') {
           document.body.classList.add('is-admin');

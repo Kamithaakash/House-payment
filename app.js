@@ -170,6 +170,19 @@ function getAuthUser() {
   return { username, isAdmin, currentMemberId: currentMember ? currentMember.id : null };
 }
 
+function isExpenseOwner(exp) {
+  if (!exp) return false;
+  const { isAdmin, currentMemberId, username } = getAuthUser();
+  if (isAdmin) return true;
+  if (!username) return false;
+
+  const cleanUser = username.toLowerCase();
+  if (exp.createdBy) {
+    return exp.createdBy.toLowerCase() === cleanUser || (currentMemberId && exp.createdBy === currentMemberId);
+  }
+  return Boolean(currentMemberId && exp.paidBy === currentMemberId);
+}
+
 function initials(name) {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 }
@@ -546,8 +559,7 @@ function buildExpenseEl(exp, compact = false) {
     splitDisplay = exp.splitAmong.map(id => memberById(id)?.name || '?').join(', ');
   }
 
-  const { isAdmin, currentMemberId, username } = getAuthUser();
-  const isOwner   = isAdmin || Boolean(currentMemberId && (exp.createdBy === currentMemberId || (exp.createdBy && exp.createdBy.toLowerCase() === username.toLowerCase()) || exp.paidBy === currentMemberId));
+  const isOwner   = isExpenseOwner(exp);
   const msLeft    = editTimeLeft(exp);
   const canEdit   = isOwner && msLeft > 0;
   const timeLabel = formatTimeLeft(msLeft);
@@ -1093,9 +1105,7 @@ function openExpenseModal(editId = null) {
   if (editId) {
     const exp = state.expenses.find(e => e.id === editId);
     if (!exp) return;
-    const { isAdmin, currentMemberId, username } = getAuthUser();
-    const canEditExp = isAdmin || Boolean(currentMemberId && (exp.createdBy === currentMemberId || (exp.createdBy && exp.createdBy.toLowerCase() === username.toLowerCase()) || exp.paidBy === currentMemberId));
-    if (!canEditExp) {
+    if (!isExpenseOwner(exp)) {
       toast('Only the person who added this expense can edit it', 'error');
       return;
     }
@@ -1220,9 +1230,7 @@ async function saveExpense(e) {
 async function deleteExpense(id) {
   const exp = state.expenses.find(e => e.id === id);
   if (!exp) return;
-  const { isAdmin, currentMemberId, username } = getAuthUser();
-  const canDeleteExp = isAdmin || Boolean(currentMemberId && (exp.createdBy === currentMemberId || (exp.createdBy && exp.createdBy.toLowerCase() === username.toLowerCase()) || exp.paidBy === currentMemberId));
-  if (!canDeleteExp) {
+  if (!isExpenseOwner(exp)) {
     toast('Only the person who added this expense can delete it', 'error');
     return;
   }
