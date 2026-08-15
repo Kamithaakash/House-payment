@@ -51,10 +51,15 @@ async function apiFetch(path, options = {}) {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
+
+  const bodyContent = typeof options.body === 'string'
+    ? options.body
+    : (options.body ? JSON.stringify(options.body) : undefined);
+
   const res = await fetch(path, {
-    headers,
     ...options,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    headers: { ...headers, ...(options.headers || {}) },
+    body: bodyContent,
   });
 
   const data = await res.json().catch(() => ({}));

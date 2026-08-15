@@ -67,7 +67,13 @@ function readBody(req) {
     let data = '';
     req.on('data', chunk => data += chunk);
     req.on('end',  ()    => {
-      try { resolve(data ? JSON.parse(data) : {}); }
+      try {
+        let parsed = data ? JSON.parse(data) : {};
+        if (typeof parsed === 'string') {
+          try { parsed = JSON.parse(parsed); } catch(e) {}
+        }
+        resolve(parsed || {});
+      }
       catch(e) { reject(e); }
     });
     req.on('error', reject);

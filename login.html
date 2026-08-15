@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,41 +8,49 @@
   <meta name="description" content="Sign in to your House Bills account to track and split household expenses." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Disapamok&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Disapamok&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&family=Noto+Sans+Sinhala:wght@400;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="icon" type="image/png" href="logo.png" />
   <style>
     /* ── Reset ── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
-      --bg:           #0f0e0c;
-      --bg-1:         #171510;
-      --bg-2:         #1e1b14;
-      --bg-3:         #252219;
+      --bg: #0f0e0c;
+      --bg-1: #171510;
+      --bg-2: #1e1b14;
+      --bg-3: #252219;
 
-      --surface:      rgba(255,246,220,0.04);
-      --surface-2:    rgba(255,246,220,0.07);
-      --border:       rgba(255,220,120,0.1);
-      --border-strong:rgba(255,220,120,0.2);
+      --surface: rgba(255, 246, 220, 0.04);
+      --surface-2: rgba(255, 246, 220, 0.07);
+      --border: rgba(255, 220, 120, 0.1);
+      --border-strong: rgba(255, 220, 120, 0.2);
 
-      --gold:         #f5a623;
-      --gold-light:   #ffc85c;
-      --gold-dark:    #c47d0e;
-      --gold-glow:    rgba(245,166,35,0.22);
-      --gold-subtle:  rgba(245,166,35,0.08);
+      --gold: #f5a623;
+      --gold-light: #ffc85c;
+      --gold-dark: #c47d0e;
+      --gold-glow: rgba(245, 166, 35, 0.22);
+      --gold-subtle: rgba(245, 166, 35, 0.08);
 
-      --text:         #f5edd8;
-      --text-muted:   #9e8e6b;
-      --text-dim:     #4d4232;
+      --text: #f5edd8;
+      --text-muted: #9e8e6b;
+      --text-dim: #4d4232;
 
-      --green:        #4ade80;
-      --red:          #f87171;
+      --green: #4ade80;
+      --red: #f87171;
 
-      --radius:       10px;
-      --radius-lg:    16px;
-      --radius-xl:    22px;
+      --radius: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
 
-      --font:         'Inter', system-ui, sans-serif;
+      --font: 'Inter', system-ui, sans-serif;
       --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
       --font-sinhala: 'Disapamok', 'Sinhala UN Disapamok', 'Noto Sans Sinhala', serif;
     }
@@ -50,7 +59,8 @@
       font-family: var(--font-sinhala);
     }
 
-    html, body {
+    html,
+    body {
       height: 100%;
       font-family: var(--font);
       background: var(--bg);
@@ -88,9 +98,10 @@
       width: 480px;
       height: 480px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(245,166,35,0.12) 0%, transparent 65%);
+      background: radial-gradient(circle, rgba(245, 166, 35, 0.12) 0%, transparent 65%);
       pointer-events: none;
     }
+
     .panel-left::after {
       content: '';
       position: absolute;
@@ -99,7 +110,7 @@
       width: 360px;
       height: 360px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(96,165,250,0.06) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -111,6 +122,7 @@
       align-items: center;
       gap: 12px;
     }
+
     .brand-mark {
       width: 100px;
       height: 100px;
@@ -123,10 +135,12 @@
       box-shadow: 0 4px 18px var(--gold-glow);
       flex-shrink: 0;
     }
+
     .brand-text {
       display: flex;
       flex-direction: column;
     }
+
     .brand-name {
       font-family: var(--font-display);
       font-size: 1rem;
@@ -134,6 +148,7 @@
       color: var(--text);
       letter-spacing: 0;
     }
+
     .brand-sub {
       font-size: 0.7rem;
       color: var(--text-muted);
@@ -162,12 +177,13 @@
       text-transform: uppercase;
       color: var(--gold);
       background: var(--gold-subtle);
-      border: 1px solid rgba(245,166,35,0.2);
+      border: 1px solid rgba(245, 166, 35, 0.2);
       border-radius: 20px;
       padding: 5px 13px;
       margin-bottom: 24px;
       width: fit-content;
     }
+
     .hero-tag::before {
       content: '';
       width: 6px;
@@ -177,9 +193,19 @@
       box-shadow: 0 0 6px var(--gold);
       animation: pulse-dot 2s ease-in-out infinite;
     }
+
     @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.4; transform: scale(0.7); }
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.4;
+        transform: scale(0.7);
+      }
     }
 
     .hero-heading {
@@ -191,6 +217,7 @@
       letter-spacing: -0.02em;
       margin-bottom: 18px;
     }
+
     .hero-heading span {
       background: linear-gradient(135deg, var(--gold-light), var(--gold));
       -webkit-background-clip: text;
@@ -212,6 +239,7 @@
       flex-direction: column;
       gap: 12px;
     }
+
     .feature-item {
       display: flex;
       align-items: center;
@@ -219,6 +247,7 @@
       font-size: 0.83rem;
       color: var(--text-muted);
     }
+
     .feature-icon {
       width: 32px;
       height: 32px;
@@ -239,12 +268,14 @@
       padding-top: 32px;
       border-top: 1px solid var(--border);
     }
+
     .quote-text {
       font-size: 0.83rem;
       color: var(--text-muted);
       font-style: italic;
       line-height: 1.65;
     }
+
     .quote-attr {
       font-size: 0.72rem;
       color: var(--text-dim);
@@ -269,8 +300,8 @@
       position: absolute;
       inset: 0;
       background-image:
-        linear-gradient(rgba(255,220,120,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,220,120,0.03) 1px, transparent 1px);
+        linear-gradient(rgba(255, 220, 120, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 220, 120, 0.03) 1px, transparent 1px);
       background-size: 48px 48px;
       pointer-events: none;
     }
@@ -285,6 +316,7 @@
     .login-header {
       margin-bottom: 36px;
     }
+
     .login-eyebrow {
       font-size: 0.7rem;
       font-weight: 600;
@@ -293,6 +325,7 @@
       color: var(--gold);
       margin-bottom: 10px;
     }
+
     .login-title {
       font-family: var(--font-display);
       font-size: 1.8rem;
@@ -301,6 +334,7 @@
       letter-spacing: -0.01em;
       line-height: 1.2;
     }
+
     .login-subtitle {
       font-size: 0.85rem;
       color: var(--text-muted);
@@ -319,6 +353,7 @@
     .field-group {
       position: relative;
     }
+
     .field-label {
       display: block;
       font-size: 0.72rem;
@@ -334,6 +369,7 @@
       display: flex;
       align-items: center;
     }
+
     .input-icon {
       position: absolute;
       left: 14px;
@@ -343,7 +379,11 @@
       pointer-events: none;
       transition: color 0.18s;
     }
-    .input-icon svg { width: 16px; height: 16px; }
+
+    .input-icon svg {
+      width: 16px;
+      height: 16px;
+    }
 
     .field-input {
       width: 100%;
@@ -358,13 +398,23 @@
       transition: border-color 0.18s, box-shadow 0.18s;
       appearance: none;
     }
-    .field-input::placeholder { color: var(--text-dim); }
+
+    .field-input::placeholder {
+      color: var(--text-dim);
+    }
+
     .field-input:focus {
       border-color: var(--gold);
       box-shadow: 0 0 0 3px var(--gold-glow);
     }
-    .field-input:focus + .focus-ring { opacity: 1; }
-    .field-input:focus ~ .input-icon { color: var(--gold); }
+
+    .field-input:focus+.focus-ring {
+      opacity: 1;
+    }
+
+    .field-input:focus~.input-icon {
+      color: var(--gold);
+    }
 
     /* Password toggle */
     .pw-toggle {
@@ -380,8 +430,15 @@
       border-radius: 4px;
       transition: color 0.18s;
     }
-    .pw-toggle:hover { color: var(--text-muted); }
-    .pw-toggle svg { width: 16px; height: 16px; }
+
+    .pw-toggle:hover {
+      color: var(--text-muted);
+    }
+
+    .pw-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
 
     /* Row: remember + forgot */
     .form-meta {
@@ -398,6 +455,7 @@
       cursor: pointer;
       user-select: none;
     }
+
     .remember-cb {
       width: 16px;
       height: 16px;
@@ -410,10 +468,12 @@
       flex-shrink: 0;
       transition: all 0.15s;
     }
+
     .remember-cb:checked {
       background: var(--gold);
       border-color: var(--gold);
     }
+
     .remember-cb:checked::after {
       content: '';
       position: absolute;
@@ -426,6 +486,7 @@
       border-top: none;
       transform: rotate(45deg);
     }
+
     .remember-label {
       font-size: 0.8rem;
       color: var(--text-muted);
@@ -438,7 +499,10 @@
       font-weight: 500;
       transition: color 0.15s;
     }
-    .forgot-link:hover { color: var(--gold-light); }
+
+    .forgot-link:hover {
+      color: var(--gold-light);
+    }
 
     /* Submit button */
     .btn-login {
@@ -463,6 +527,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .btn-login::before {
       content: '';
       position: absolute;
@@ -471,32 +536,61 @@
       opacity: 0;
       transition: opacity 0.2s;
     }
-    .btn-login:hover::before { opacity: 1; }
+
+    .btn-login:hover::before {
+      opacity: 1;
+    }
+
     .btn-login:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(245,166,35,0.5);
+      box-shadow: 0 8px 32px rgba(245, 166, 35, 0.5);
     }
-    .btn-login:active { transform: translateY(0); }
-    .btn-login svg { width: 16px; height: 16px; position: relative; z-index: 1; }
-    .btn-login span { position: relative; z-index: 1; }
+
+    .btn-login:active {
+      transform: translateY(0);
+    }
+
+    .btn-login svg {
+      width: 16px;
+      height: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-login span {
+      position: relative;
+      z-index: 1;
+    }
 
     /* Loading state */
     .btn-login.loading {
       pointer-events: none;
       opacity: 0.8;
     }
+
     .btn-login .spinner {
       display: none;
       width: 16px;
       height: 16px;
-      border: 2px solid rgba(15,14,12,0.3);
+      border: 2px solid rgba(15, 14, 12, 0.3);
       border-top-color: #0f0e0c;
       border-radius: 50%;
       animation: spin 0.7s linear infinite;
     }
-    .btn-login.loading .spinner { display: block; }
-    .btn-login.loading .btn-label { display: none; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-login.loading .spinner {
+      display: block;
+    }
+
+    .btn-login.loading .btn-label {
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* Divider */
     .divider {
@@ -509,7 +603,9 @@
       text-transform: uppercase;
       letter-spacing: 0.06em;
     }
-    .divider::before, .divider::after {
+
+    .divider::before,
+    .divider::after {
       content: '';
       flex: 1;
       height: 1px;
@@ -535,12 +631,17 @@
       transition: all 0.18s;
       letter-spacing: 0;
     }
+
     .btn-passphrase:hover {
       background: var(--surface-2);
       color: var(--text);
       border-color: var(--border-strong);
     }
-    .btn-passphrase svg { width: 15px; height: 15px; }
+
+    .btn-passphrase svg {
+      width: 15px;
+      height: 15px;
+    }
 
     /* Status message */
     .status-msg {
@@ -551,19 +652,26 @@
       align-items: center;
       gap: 8px;
     }
+
     .status-msg.error {
       display: flex;
-      background: rgba(248,113,113,0.08);
-      border: 1px solid rgba(248,113,113,0.25);
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.25);
       color: var(--red);
     }
+
     .status-msg.success {
       display: flex;
-      background: rgba(74,222,128,0.08);
-      border: 1px solid rgba(74,222,128,0.25);
+      background: rgba(74, 222, 128, 0.08);
+      border: 1px solid rgba(74, 222, 128, 0.25);
       color: var(--green);
     }
-    .status-msg svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+    .status-msg svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
 
     /* Footer note */
     .login-footer {
@@ -573,311 +681,318 @@
       text-align: center;
       line-height: 1.7;
     }
+
     .login-footer a {
       color: var(--gold);
       text-decoration: none;
       font-weight: 500;
     }
-    .login-footer a:hover { color: var(--gold-light); }
+
+    .login-footer a:hover {
+      color: var(--gold-light);
+    }
 
     /* ── Responsive ── */
     @media (max-width: 820px) {
-      .login-shell { grid-template-columns: 1fr; }
-      .panel-left  { display: none; }
-      .panel-right { padding: 40px 24px; align-items: flex-start; padding-top: 60px; }
+      .login-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-left {
+        display: none;
+      }
+
+      .panel-right {
+        padding: 40px 24px;
+        align-items: flex-start;
+        padding-top: 60px;
+      }
 
       /* Show mini brand on mobile */
       .panel-right::after {
         content: '';
         position: absolute;
-        top: 0; left: 0; right: 0;
+        top: 0;
+        left: 0;
+        right: 0;
         height: 3px;
         background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark));
       }
     }
   </style>
 </head>
+
 <body>
 
-<div class="login-shell">
+  <div class="login-shell">
 
-  <!-- ── LEFT PANEL ── -->
-  <div class="panel-left">
+    <!-- ── LEFT PANEL ── -->
+    <div class="panel-left">
 
-    <!-- Brand -->
-    <div class="brand">
-      <div class="brand-mark">
-        <img src="logo.png" alt="Boarding Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
-      </div>
-      <div class="brand-text">
-        <span class="brand-name sinhala-title">ලකේ පමනෙ පකේ ගනුදෙනු</span>
-        <span class="brand-sub">House Expense Tracker</span>
-      </div>
-    </div>
-
-    <!-- Hero -->
-    <div class="panel-hero">
-      <div class="hero-tag">Household Finance</div>
-      <h1 class="hero-heading">
-        Split fairly.<br/>
-        Settle <span>simply.</span>
-      </h1>
-      <p class="hero-desc">
-        Track every expense, balance debts automatically, and settle up at month-end — all in one place for everyone under the same roof.
-      </p>
-      <div class="feature-list">
-        <div class="feature-item">
-          <div class="feature-icon">📊</div>
-          <span>Real-time balance overview for all members</span>
+      <!-- Brand -->
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="logo.png" alt="Boarding Logo"
+            style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />
         </div>
-        <div class="feature-item">
-          <div class="feature-icon">⚡</div>
-          <span>Minimum transactions to clear all debts</span>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">📅</div>
-          <span>Monthly history and settlement records</span>
+        <div class="brand-text">
+          <span class="brand-name sinhala-title">විකේ පමනෙ පකේ ගනුදෙනු</span>
+          <span class="brand-sub">House Expense Tracker</span>
         </div>
       </div>
-    </div>
 
-    <!-- Quote -->
-    <div class="panel-footer">
-      <p class="quote-text">"Good housemates don't argue about money — they use House Bills."</p>
-      <p class="quote-attr">— Every peaceful flat, ever</p>
-    </div>
-
-  </div>
-
-  <!-- ── RIGHT PANEL ── -->
-  <div class="panel-right">
-    <div class="login-card">
-
-      <div class="login-header">
-        <div class="login-eyebrow">Welcome back</div>
-        <h2 class="login-title">Sign in to your account</h2>
-        <p class="login-subtitle">Enter your credentials to access the house expense tracker.</p>
-      </div>
-
-      <!-- Status message (shown on error/success) -->
-      <div class="status-msg" id="status-msg" role="alert">
-        <svg id="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-        <span id="status-text"></span>
-      </div>
-
-      <form class="login-form" id="login-form" novalidate>
-
-        <!-- Username -->
-        <div class="field-group">
-          <label class="field-label" for="username">Username</label>
-          <div class="input-wrap">
-            <div class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-              </svg>
-            </div>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              class="field-input"
-              placeholder="your_username"
-              autocomplete="username"
-              required
-              spellcheck="false"
-            />
+      <!-- Hero -->
+      <div class="panel-hero">
+        <div class="hero-tag">Household Finance</div>
+        <h1 class="hero-heading">
+          Split fairly.<br />
+          Settle <span>simply.</span>
+        </h1>
+        <p class="hero-desc">
+          Srilankan NO. 01 Boading Management System by Vike_Pamana@CSE
+        </p>
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-icon">📊</div>
+            <span>Real-time balance overview for all members</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">⚡</div>
+            <span>Minimum transactions to clear all debts</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">📅</div>
+            <span>Monthly history and settlement records</span>
           </div>
         </div>
+      </div>
 
-        <!-- Password -->
-        <div class="field-group">
-          <label class="field-label" for="password">Password</label>
-          <div class="input-wrap">
-            <div class="input-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4"/>
-              </svg>
-            </div>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              class="field-input"
-              placeholder="••••••••"
-              autocomplete="current-password"
-              required
-            />
-            <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Toggle password visibility">
-              <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-              </svg>
-            </button>
-          </div>
+      <!-- Quote -->
+      <div class="panel-footer">
+        <p class="quote-text">"Good housemates don't argue about money — they use Vike_Pamana."</p>
+        <p class="quote-attr">— Every peaceful flat, ever</p>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT PANEL ── -->
+    <div class="panel-right">
+      <div class="login-card">
+
+        <div class="login-header">
+          <div class="login-eyebrow">Welcome back</div>
+          <h2 class="login-title">Sign in to your account</h2>
+          <p class="login-subtitle">Enter your credentials to access the house expense tracker.</p>
         </div>
 
-        <!-- Remember me + Forgot -->
-        <div class="form-meta">
-          <label class="remember-wrap">
-            <input type="checkbox" class="remember-cb" id="remember-me" />
-            <span class="remember-label">Remember me</span>
-          </label>
-          <a href="#" class="forgot-link" id="forgot-link">Forgot password?</a>
-        </div>
-
-        <!-- Submit -->
-        <button type="submit" class="btn-login" id="login-btn">
-          <div class="spinner"></div>
-          <span class="btn-label">
-            Sign In
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:middle;margin-left:4px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </button>
-
-        <!-- Divider -->
-        <div class="divider">or</div>
-
-        <!-- Passphrase login alternative -->
-        <button type="button" class="btn-passphrase" id="passphrase-btn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="14" rx="2"/>
-            <path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 014 0"/>
-            <circle cx="12" cy="14" r="1" fill="currentColor"/>
+        <!-- Status message (shown on error/success) -->
+        <div class="status-msg" id="status-msg" role="alert">
+          <svg id="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          Use a house passphrase instead
-        </button>
+          <span id="status-text"></span>
+        </div>
 
-      </form>
+        <form class="login-form" id="login-form" novalidate>
 
-      <div class="login-footer">
-        New to the house? <a href="#" id="join-link">Ask a member to add you</a>
-        <br/>
-        <span style="margin-top:6px;display:block">
-          By signing in you agree to our
-          <a href="#">privacy policy</a>.
-        </span>
+          <!-- Username -->
+          <div class="field-group">
+            <label class="field-label" for="username">Username</label>
+            <div class="input-wrap">
+              <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <input type="text" id="username" name="username" class="field-input" placeholder="your_username"
+                autocomplete="username" required spellcheck="false" />
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="field-group">
+            <label class="field-label" for="password">Password</label>
+            <div class="input-wrap">
+              <div class="input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                </svg>
+              </div>
+              <input type="password" id="password" name="password" class="field-input" placeholder="••••••••"
+                autocomplete="current-password" required />
+              <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Toggle password visibility">
+                <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember me + Forgot -->
+          <div class="form-meta">
+            <label class="remember-wrap">
+              <input type="checkbox" class="remember-cb" id="remember-me" />
+              <span class="remember-label">Remember me</span>
+            </label>
+            <a href="#" class="forgot-link" id="forgot-link">Forgot password?</a>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn-login" id="login-btn">
+            <div class="spinner"></div>
+            <span class="btn-label">
+              Sign In
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                style="display:inline;vertical-align:middle;margin-left:4px">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </span>
+          </button>
+
+          <!-- Divider -->
+          <div class="divider">or</div>
+
+          <!-- Passphrase login alternative -->
+          <button type="button" class="btn-passphrase" id="passphrase-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="7" width="20" height="14" rx="2" />
+              <path d="M16 7V5a2 2 0 00-4 0v2M8 7V5a2 2 0 014 0" />
+              <circle cx="12" cy="14" r="1" fill="currentColor" />
+            </svg>
+            Use a house passphrase instead
+          </button>
+
+        </form>
+
+        <div class="login-footer">
+          New to the house? <a href="#" id="join-link">Ask a member to add you</a>
+          <br />
+          <span style="margin-top:6px;display:block">
+            By signing in you agree to our
+            <a href="#">privacy policy</a>.
+          </span>
+        </div>
+
       </div>
-
     </div>
+
   </div>
 
-</div>
+  <script>
+    'use strict';
 
-<script>
-  'use strict';
+    const AUTH_KEY = 'hb_token';
+    const USER_KEY = 'hb_user';
 
-  const AUTH_KEY = 'hb_token';
-  const USER_KEY = 'hb_user';
+    /* ── If already logged in, skip to dashboard ── */
+    (function guardAlreadyLoggedIn() {
+      const token = localStorage.getItem(AUTH_KEY);
+      if (token) {
+        fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+          .then(r => { if (r.ok) window.location.replace('/'); })
+          .catch(() => {/* token invalid — stay on login */ });
+      }
+    })();
 
-  /* ── If already logged in, skip to dashboard ── */
-  (function guardAlreadyLoggedIn() {
-    const token = localStorage.getItem(AUTH_KEY);
-    if (token) {
-      fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
-        .then(r => { if (r.ok) window.location.replace('/'); })
-        .catch(() => {/* token invalid — stay on login */});
+    const form = document.getElementById('login-form');
+    const loginBtn = document.getElementById('login-btn');
+    const statusMsg = document.getElementById('status-msg');
+    const statusText = document.getElementById('status-text');
+    const statusIcon = document.getElementById('status-icon');
+    const pwToggle = document.getElementById('pw-toggle');
+    const passwordEl = document.getElementById('password');
+    const eyeIcon = document.getElementById('eye-icon');
+
+    /* ── Password visibility toggle ── */
+    pwToggle.addEventListener('click', () => {
+      const isHidden = passwordEl.type === 'password';
+      passwordEl.type = isHidden ? 'text' : 'password';
+      eyeIcon.innerHTML = isHidden
+        ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+        : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+    });
+
+    /* ── Status messages ── */
+    function showStatus(type, message) {
+      statusMsg.className = `status-msg ${type}`;
+      statusText.textContent = message;
+      statusIcon.innerHTML = type === 'error'
+        ? `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`
+        : `<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`;
     }
-  })();
+    function hideStatus() { statusMsg.className = 'status-msg'; }
 
-  const form       = document.getElementById('login-form');
-  const loginBtn   = document.getElementById('login-btn');
-  const statusMsg  = document.getElementById('status-msg');
-  const statusText = document.getElementById('status-text');
-  const statusIcon = document.getElementById('status-icon');
-  const pwToggle   = document.getElementById('pw-toggle');
-  const passwordEl = document.getElementById('password');
-  const eyeIcon    = document.getElementById('eye-icon');
+    /* ── Form submit — calls real API ── */
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
 
-  /* ── Password visibility toggle ── */
-  pwToggle.addEventListener('click', () => {
-    const isHidden = passwordEl.type === 'password';
-    passwordEl.type = isHidden ? 'text' : 'password';
-    eyeIcon.innerHTML = isHidden
-      ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
-      : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
-  });
+      const username = document.getElementById('username').value.trim();
+      const password = passwordEl.value;
 
-  /* ── Status messages ── */
-  function showStatus(type, message) {
-    statusMsg.className = `status-msg ${type}`;
-    statusText.textContent = message;
-    statusIcon.innerHTML = type === 'error'
-      ? `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`
-      : `<path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`;
-  }
-  function hideStatus() { statusMsg.className = 'status-msg'; }
-
-  /* ── Form submit — calls real API ── */
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    hideStatus();
-
-    const username = document.getElementById('username').value.trim();
-    const password = passwordEl.value;
-
-    if (!username || !password) {
-      showStatus('error', 'Please fill in your username and password.');
-      return;
-    }
-
-    loginBtn.classList.add('loading');
-
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        showStatus('error', data.error || 'Invalid credentials. Please try again.');
+      if (!username || !password) {
+        showStatus('error', 'Please fill in your username and password.');
         return;
       }
 
-      /* Save session */
-      localStorage.setItem(AUTH_KEY, data.token);
-      localStorage.setItem(USER_KEY, data.username);
+      loginBtn.classList.add('loading');
 
-      if (document.getElementById('remember-me').checked) {
-        /* Nothing extra needed — localStorage persists already */
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          showStatus('error', data.error || 'Invalid credentials. Please try again.');
+          return;
+        }
+
+        /* Save session */
+        localStorage.setItem(AUTH_KEY, data.token);
+        localStorage.setItem(USER_KEY, data.username);
+
+        if (document.getElementById('remember-me').checked) {
+          /* Nothing extra needed — localStorage persists already */
+        }
+
+        showStatus('success', `Welcome back, ${data.username}! Redirecting…`);
+        setTimeout(() => window.location.replace('/'), 800);
+
+      } catch (err) {
+        showStatus('error', 'Could not reach the server. Is it running?');
+      } finally {
+        loginBtn.classList.remove('loading');
       }
+    });
 
-      showStatus('success', `Welcome back, ${data.username}! Redirecting…`);
-      setTimeout(() => window.location.replace('/'), 800);
+    /* Input clears status */
+    document.querySelectorAll('.field-input').forEach(el =>
+      el.addEventListener('input', hideStatus)
+    );
 
-    } catch (err) {
-      showStatus('error', 'Could not reach the server. Is it running?');
-    } finally {
-      loginBtn.classList.remove('loading');
-    }
-  });
-
-  /* Input clears status */
-  document.querySelectorAll('.field-input').forEach(el =>
-    el.addEventListener('input', hideStatus)
-  );
-
-  /* Forgot / join placeholders */
-  document.getElementById('forgot-link').addEventListener('click', e => {
-    e.preventDefault();
-    showStatus('error', 'Ask your house admin to update your password in the Accounts tab.');
-  });
-  document.getElementById('passphrase-btn').addEventListener('click', () => {
-    showStatus('error', 'Passphrase login is not configured.');
-  });
-  document.getElementById('join-link').addEventListener('click', e => {
-    e.preventDefault();
-    showStatus('error', 'Ask your house admin to create an account for you in the Accounts tab.');
-  });
-</script>
+    /* Forgot / join placeholders */
+    document.getElementById('forgot-link').addEventListener('click', e => {
+      e.preventDefault();
+      showStatus('error', 'Ask your house admin to update your password in the Accounts tab.');
+    });
+    document.getElementById('passphrase-btn').addEventListener('click', () => {
+      showStatus('error', 'Passphrase login is not configured.');
+    });
+    document.getElementById('join-link').addEventListener('click', e => {
+      e.preventDefault();
+      showStatus('error', 'Ask your house admin to create an account for you in the Accounts tab.');
+    });
+  </script>
 </body>
-</html>
 
+</html>
