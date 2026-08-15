@@ -2786,3 +2786,512 @@ body:not(.is-admin) .admin-only {
   transform: translateY(0);
   box-shadow: none;
 }
+
+/* ============================================================
+   PAYMENT DETAIL MODAL — Mobile-First Redesign
+   ============================================================ */
+
+/* ── Overlay ─────────────────────────────────────────────── */
+#pay-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+#pay-detail-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── Modal card — slide up ───────────────────────────────── */
+.pay-detail-modal {
+  background: #1c1911;
+  border: 1px solid rgba(255, 220, 120, 0.1);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  width: 100%;
+  max-width: 580px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -16px 60px rgba(0, 0, 0, 0.75);
+  transform: translateY(100%);
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow: hidden;
+}
+
+#pay-detail-overlay.open .pay-detail-modal {
+  transform: translateY(0);
+}
+
+/* Drag handle */
+.pay-detail-drag-handle {
+  width: 38px;
+  height: 4px;
+  background: rgba(255, 220, 120, 0.15);
+  border-radius: 2px;
+  margin: 10px auto 0;
+  flex-shrink: 0;
+}
+
+/* ── Header — compact ────────────────────────────────────── */
+.pay-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px 10px;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.pay-detail-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pay-detail-avatars {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pay-detail-avatars .balance-avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+  border: 2px solid #1c1911;
+  border-radius: 10px;
+}
+
+.pay-detail-avatars .balance-avatar:last-child {
+  margin-left: -8px;
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.pay-detail-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Summary strip — 3 Stat Cards ────────────────────────── */
+.pd-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 0 18px 12px;
+  flex-shrink: 0;
+}
+
+.pd-stat {
+  background: rgba(255, 246, 220, 0.03);
+  border: 1px solid rgba(255, 220, 120, 0.08);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  min-width: 0;
+}
+
+.pd-stat-net {
+  background: rgba(251, 146, 60, 0.08);
+  border-color: rgba(251, 146, 60, 0.25);
+}
+
+.pd-stat-net.settled {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+.pd-stat-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.pd-stat-value {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pd-stat-value.gold     { color: var(--gold-light); }
+.pd-stat-value.positive { color: #4ade80; }
+.pd-stat-value.amber    { color: #fb923c; }
+
+
+/* ── Scrollable body ─────────────────────────────────────── */
+.pay-detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 18px 12px;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.pay-detail-body::-webkit-scrollbar { width: 3px; }
+.pay-detail-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 220, 120, 0.1);
+  border-radius: 2px;
+}
+
+/* ── Section title ───────────────────────────────────────── */
+.pd-section-title {
+  font-size: 0.63rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-dim);
+  margin: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pd-section-title:first-child { margin-top: 0; }
+
+.pd-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 220, 120, 0.07);
+}
+
+/* ── Expense row ─────────────────────────────────────────── */
+.pd-expense-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 246, 220, 0.02);
+  border: 1px solid rgba(255, 220, 120, 0.05);
+  margin-bottom: 6px;
+  transition: background 0.14s;
+}
+
+.pd-expense-row:active {
+  background: rgba(255, 246, 220, 0.05);
+}
+
+.pd-exp-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 246, 220, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.pd-exp-info { flex: 1; min-width: 0; }
+
+.pd-exp-desc {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pd-exp-meta {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pd-exp-amount {
+  font-family: var(--font-display);
+  font-size: 0.86rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pd-exp-amount.owe    { color: #fb923c; }
+.pd-exp-amount.offset { color: #4ade80; }
+
+/* ── Already paid row ────────────────────────────────────── */
+.pd-already-paid {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 8px 0 4px;
+  background: rgba(74, 222, 128, 0.05);
+  border: 1px solid rgba(74, 222, 128, 0.14);
+  border-radius: 12px;
+  font-size: 0.76rem;
+}
+
+.pd-already-paid .label { color: #4ade80; font-weight: 600; }
+.pd-already-paid .value {
+  color: #4ade80;
+  font-weight: 700;
+  font-family: var(--font-display);
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.pay-detail-footer {
+  padding: 10px 18px 20px;
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 220, 120, 0.07);
+}
+
+.pd-close-btn {
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 13px 16px !important;
+  font-size: 0.86rem !important;
+  border-radius: 13px !important;
+  min-height: 50px;
+}
+
+.pd-mark-btn {
+  flex: 1;
+  justify-content: center;
+  padding: 13px 18px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  border-radius: 13px !important;
+  min-height: 50px;
+  gap: 8px;
+}
+
+/* ── Desktop: centered dialog ────────────────────────────── */
+@media (min-width: 640px) {
+  #pay-detail-overlay {
+    align-items: center;
+  }
+
+  .pay-detail-modal {
+    border-radius: 20px;
+    border-bottom: 1px solid rgba(255, 220, 120, 0.1);
+    max-height: 84vh;
+    transform: scale(0.96) translateY(8px);
+    opacity: 0;
+    transition: transform 0.28s cubic-bezier(0.34, 1.15, 0.64, 1), opacity 0.22s ease;
+  }
+
+  #pay-detail-overlay.open .pay-detail-modal {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+
+  .pay-detail-drag-handle { display: none; }
+}
+
+/* ── Info button on settle items ─────────────────────────── */
+.settle-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 220, 120, 0.15);
+  background: rgba(255, 220, 120, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.18s;
+}
+
+.settle-info-btn:hover {
+  background: rgba(255, 220, 120, 0.1);
+  border-color: rgba(255, 220, 120, 0.3);
+  color: var(--gold-light);
+}
+
+.settle-info-btn svg {
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+/* ============================================================
+   NOTIFICATION BELL & REMINDERS DRAWER
+   ============================================================ */
+.notif-btn {
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: #f87171;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid var(--bg-1);
+  box-shadow: 0 0 10px rgba(248, 113, 113, 0.5);
+}
+
+.notif-badge.hidden {
+  display: none !important;
+}
+
+.notif-modal {
+  max-width: 480px;
+}
+
+.notif-perm-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(238, 216, 71, 0.08);
+  border: 1px solid rgba(238, 216, 71, 0.25);
+  border-radius: 12px;
+  margin-bottom: 14px;
+}
+
+.notif-perm-banner.hidden {
+  display: none !important;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 246, 220, 0.03);
+  border: 1px solid rgba(255, 220, 120, 0.08);
+  border-radius: 12px;
+}
+
+.notif-item-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.notif-item-sub {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.notif-item-badge {
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  white-space: nowrap;
+}
+
+.notif-item-badge.announcement {
+  background: rgba(238, 216, 71, 0.15);
+  color: var(--gold-light);
+  border-color: rgba(238, 216, 71, 0.3);
+}
+
+.notif-item-badge.received {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+/* ── Admin Announcement Box ─────────────────────────────── */
+.admin-announcement-box {
+  background: rgba(238, 216, 71, 0.05);
+  border: 1px dashed rgba(238, 216, 71, 0.3);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.admin-announcement-box.hidden {
+  display: none !important;
+}
+
+.admin-ann-title {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Undo Settlement Button ──────────────────────────────── */
+.btn-undo-settlement {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 8px;
+  background: rgba(251, 146, 60, 0.12);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-undo-settlement:hover {
+  background: rgba(251, 146, 60, 0.25);
+  border-color: rgba(251, 146, 60, 0.5);
+}
+
+.btn-undo-settlement:active {
+  transform: scale(0.96);
+}
+
+

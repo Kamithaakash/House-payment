@@ -359,8 +359,190 @@ function computeSettlement(month = null) {
 }
 
 // ============================================================
+// PAYMENT DETAIL BREAKDOWN
+// ============================================================
+
+/**
+ * Compute the full transparent debt breakdown between `fromId` and `toId`.
+ * Shows total expenses paid by toId, offsets/payments made by fromId,
+ * and the exact net remaining to pay.
+ */
+function computeDebtBreakdown(fromId, toId, month) {
+  // Expenses where toId paid and fromId was in the split → fromId owes toId
+  const owedToTarget = state.expenses
+    .filter(e => e.month === month && e.paidBy === toId && e.splitAmong.includes(fromId))
+    .map(e => ({ ...e, myShare: Math.round((e.amount / e.splitAmong.length) * 100) / 100 }));
+
+  // Expenses where fromId paid and toId was in the split → offsets debt
+  const owedByTarget = state.expenses
+    .filter(e => e.month === month && e.paidBy === fromId && e.splitAmong.includes(toId))
+    .map(e => ({ ...e, myShare: Math.round((e.amount / e.splitAmong.length) * 100) / 100 }));
+
+  const totalOwed   = owedToTarget.reduce((s, e) => s + e.myShare, 0);
+  const totalOffset = owedByTarget.reduce((s, e) => s + e.myShare, 0);
+
+  // Partial cash payments made by fromId to toId
+  const paymentsFrom = state.partialSettlements
+    .filter(ps => ps.month === month && ps.from === fromId && ps.to === toId)
+    .reduce((s, ps) => s + ps.amount, 0);
+
+  // Partial cash payments made by toId to fromId
+  const paymentsTo = state.partialSettlements
+    .filter(ps => ps.month === month && ps.from === toId && ps.to === fromId)
+    .reduce((s, ps) => s + ps.amount, 0);
+
+  const totalDeductions = totalOffset + paymentsFrom - paymentsTo;
+  const netRemaining    = Math.max(0, Math.round((totalOwed - totalDeductions) * 100) / 100);
+
+  return {
+    owedToTarget,
+    owedByTarget,
+    totalOwed: Math.round(totalOwed * 100) / 100,
+    totalOffset: Math.round(totalOffset * 100) / 100,
+    paymentsFrom: Math.round(paymentsFrom * 100) / 100,
+    totalDeductions: Math.round(totalDeductions * 100) / 100,
+    netRemaining
+  };
+}
+
+/**
+ * Open the Payment Detail bottom-sheet/modal showing the complete breakdown.
+ */
+function openPaymentDetailModal(fromId, toId, amount, month) {
+  const from = memberById(fromId);
+  const to   = memberById(toId);
+  if (!from || !to) return;
+
+  const bd = computeDebtBreakdown(fromId, toId, month);
+
+  // Use the passed-in amount from Settle Up tab if available to ensure 100% exact sync
+  const netToPay = amount > 0 ? amount : bd.netRemaining;
+  const isSettled = netToPay < 0.01;
+
+  // ── Header: avatars + names ───────────────────────────────
+  document.getElementById('pd-avatars').innerHTML = `
+    <div class="balance-avatar" style="background:${from.color}">${initials(from.name)}</div>
+    <div class="balance-avatar" style="background:${to.color}">${initials(to.name)}</div>
+  `;
+  document.getElementById('pd-subtitle').textContent =
+    `${from.name}  →  ${to.name}  ·  ${formatMonthLabel(month)}`;
+
+  // ── Summary strip: 3 compact stat cards ─────────────────────
+  document.getElementById('pd-summary-strip').innerHTML = `
+    <div class="pd-stat">
+      <div class="pd-stat-label">Total Spent</div>
+      <div class="pd-stat-value gold">${fmt(bd.totalOwed)}</div>
+    </div>
+    <div class="pd-stat">
+      <div class="pd-stat-label">Offsets / Paid</div>
+      <div class="pd-stat-value positive">${bd.totalDeductions > 0 ? '−' + fmt(bd.totalDeductions) : '—'}</div>
+    </div>
+    <div class="pd-stat pd-stat-net ${isSettled ? 'settled' : ''}">
+      <div class="pd-stat-label">${isSettled ? 'Status' : 'Net To Pay'}</div>
+      <div class="pd-stat-value ${isSettled ? 'positive' : 'amber'}">${isSettled ? '✓ Settled' : fmt(netToPay)}</div>
+    </div>
+  `;
+
+  // ── Body ──────────────────────────────────────────────────
+  const body = document.getElementById('pay-detail-body');
+  body.innerHTML = '';
+
+  const makeExpenseRow = (e, dir) => {
+    const row = document.createElement('div');
+    row.className = 'pd-expense-row';
+    const splitLabel = e.splitAmong.length === 1
+      ? 'only you'
+      : `split ${e.splitAmong.length} ways`;
+    const dateStr = new Date(e.date).toLocaleDateString('en-GB', {
+      day: 'numeric', month: 'short'
+    });
+
+    row.innerHTML = `
+      <div class="pd-exp-icon">${CATEGORY_ICONS[e.category] || '📦'}</div>
+      <div class="pd-exp-info">
+        <div class="pd-exp-desc">${e.description}</div>
+        <div class="pd-exp-meta">${dateStr} · ${splitLabel} · total ${fmt(e.amount)}</div>
+      </div>
+      <div class="pd-exp-amount ${dir}">${dir === 'owe' ? '−' : '+'}${fmt(e.myShare)}</div>
+    `;
+    return row;
+  };
+
+  // Section 1 — Expenses paid by "to"
+  if (bd.owedToTarget.length > 0) {
+    const h1 = document.createElement('p');
+    h1.className = 'pd-section-title';
+    h1.textContent = `Expenses Paid by ${to.name} (${from.name}'s share)`;
+    body.appendChild(h1);
+    bd.owedToTarget
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .forEach(e => body.appendChild(makeExpenseRow(e, 'owe')));
+  }
+
+  // Section 2 — Deductions: Offsets paid by "from" or cash payments
+  if (bd.owedByTarget.length > 0 || bd.paymentsFrom > 0) {
+    const h2 = document.createElement('p');
+    h2.className = 'pd-section-title';
+    h2.textContent = `Deductions & Offsets (Paid by ${from.name})`;
+    body.appendChild(h2);
+
+    // Offsets
+    bd.owedByTarget
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .forEach(e => body.appendChild(makeExpenseRow(e, 'offset')));
+
+    // Cash payments
+    if (bd.paymentsFrom > 0) {
+      const paidRow = document.createElement('div');
+      paidRow.className = 'pd-already-paid';
+      paidRow.innerHTML = `
+        <span class="label">✓ Partial cash payment made</span>
+        <span class="value">+${fmt(bd.paymentsFrom)}</span>
+      `;
+      body.appendChild(paidRow);
+    }
+  }
+
+  // ── Footer ────────────────────────────────────────────────
+  const footer = document.getElementById('pay-detail-footer');
+  footer.innerHTML = '';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn btn-ghost pd-close-btn';
+  cancelBtn.textContent = 'Close';
+  cancelBtn.addEventListener('click', closePaymentDetailModal);
+  footer.appendChild(cancelBtn);
+
+  if (!isSettled) {
+    const markPaidBtn = document.createElement('button');
+    markPaidBtn.className = 'btn btn-primary pd-mark-btn';
+    markPaidBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:16px;height:16px;flex-shrink:0">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Mark Paid · ${fmt(netToPay)}
+    `;
+    markPaidBtn.addEventListener('click', () => {
+      closePaymentDetailModal();
+      markAsPaid(fromId, toId, netToPay, month);
+    });
+    footer.appendChild(markPaidBtn);
+  }
+
+  document.getElementById('pay-detail-overlay').classList.add('open');
+}
+
+function closePaymentDetailModal() {
+  document.getElementById('pay-detail-overlay').classList.remove('open');
+}
+
+
+
+
+// ============================================================
 // TAB ROUTING
 // ============================================================
+
 
 let activeTab = 'dashboard';
 
@@ -787,11 +969,19 @@ function renderSettle() {
           <span class="si-to">${to.name}</span>
         </div>
         <div class="settle-amount">${fmt(tx.amount)}</div>
+        <button class="settle-info-btn" data-from="${tx.from}" data-to="${tx.to}" data-amount="${tx.amount}" title="View breakdown">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </button>
         <button class="mark-paid-btn" data-from="${tx.from}" data-to="${tx.to}" data-amount="${tx.amount}" title="Mark as Paid">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           <span class="mpb-label">Mark Paid</span>
         </button>
       `;
+
+      item.querySelector('.settle-info-btn').addEventListener('click', e => {
+        const btn = e.currentTarget;
+        openPaymentDetailModal(btn.dataset.from, btn.dataset.to, parseFloat(btn.dataset.amount), month);
+      });
 
       item.querySelector('.mark-paid-btn').addEventListener('click', e => {
         const btn = e.currentTarget;
@@ -800,6 +990,7 @@ function renderSettle() {
 
       list.appendChild(item);
     });
+
   } else {
     // No pending — show settled banner above the paid list
     const settled = document.createElement('div');
@@ -826,13 +1017,20 @@ function renderSettle() {
   if (paidThisMonth.length > 0) {
     const paidHeader = document.createElement('div');
     paidHeader.className = 'paid-section-header paid-section-header--below';
-    paidHeader.innerHTML = `<span>✅ Already Paid</span>`;
+    paidHeader.innerHTML = `<span>✅ Already Paid (Undo within 30m)</span>`;
     list.appendChild(paidHeader);
 
     paidThisMonth.forEach(ps => {
       const from = memberById(ps.from);
       const to   = memberById(ps.to);
       if (!from || !to) return;
+
+      const createdTime = new Date(ps.createdAt || ps.paidAt).getTime();
+      const nowTime = new Date().getTime();
+      const elapsedMins = (nowTime - createdTime) / (1000 * 60);
+      const canUndo = elapsedMins <= 30;
+      const minsLeft = Math.max(1, Math.ceil(30 - elapsedMins));
+
       const item = document.createElement('div');
       item.className = 'settle-item settle-item-paid';
       item.innerHTML = `
@@ -846,9 +1044,17 @@ function renderSettle() {
           <span class="si-to">${to.name}</span>
         </div>
         <div class="settle-amount" style="color:var(--emerald)">${fmt(ps.amount)}</div>
-        <span class="paid-badge">✓ Paid</span>
+        ${canUndo ? `<button class="btn-undo-settlement" data-id="${ps.id}">↩️ Undo (${minsLeft}m left)</button>` : '<span class="paid-badge">✓ Paid</span>'}
         <div class="si-date">${new Date(ps.paidAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
       `;
+
+      if (canUndo) {
+        const undoBtn = item.querySelector('.btn-undo-settlement');
+        if (undoBtn) {
+          undoBtn.addEventListener('click', () => undoPartialSettlement(ps.id));
+        }
+      }
+
       list.appendChild(item);
     });
   }
@@ -862,6 +1068,33 @@ function renderSettle() {
     actions.appendChild(archBtn);
   }
 }
+
+async function undoPartialSettlement(id) {
+  const ok = await showConfirm(
+    'Undo Settlement',
+    'Are you sure you want to undo this payment settlement?'
+  );
+  if (!ok) return;
+
+  try {
+    const res = await fetch(`/api/partial-settlements?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('house_tracker_auth_token')}`
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to undo settlement');
+
+    toast('↩️ Settlement undone!');
+    await loadAll();
+    renderSettle();
+    if (activeTab === 'dashboard') renderDashboard();
+  } catch (err) {
+    toast(err.message || 'Undo failed', 'error');
+  }
+}
+
 
 
 // ============================================================
@@ -1497,6 +1730,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target === document.getElementById('member-modal-overlay')) closeMemberModal();
   });
 
+  // Payment detail modal
+  document.getElementById('pay-detail-close').addEventListener('click', closePaymentDetailModal);
+  document.getElementById('pay-detail-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('pay-detail-overlay')) closePaymentDetailModal();
+  });
+
   // Expense filters
   document.getElementById('filter-member').addEventListener('change', e => {
     expenseFilters.member = e.target.value; renderExpenses();
@@ -1589,14 +1828,172 @@ document.addEventListener('DOMContentLoaded', async () => {
   const changepwCancel = document.getElementById('changepw-cancel-btn');
   if (changepwCancel) changepwCancel.addEventListener('click', closeChangePw);
 
-  const changepwOverlay = document.getElementById('changepw-modal-overlay');
-  if (changepwOverlay) {
-    changepwOverlay.addEventListener('click', e => {
-      if (e.target === changepwOverlay) closeChangePw();
+// ============================================================
+// PAYMENT REMINDERS & NOTIFICATIONS (7-day + 5-day cycle)
+// ============================================================
+
+let currentReminders = [];
+
+async function fetchReminders() {
+  try {
+    const data = await apiFetch('/api/reminders');
+    currentReminders = data.reminders || [];
+
+    // Update Bell Badge
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      if (currentReminders.length > 0) {
+        badge.textContent = currentReminders.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    // Trigger Browser Push Notification if permission granted
+    if ('Notification' in window && Notification.permission === 'granted' && currentReminders.length > 0) {
+      const first = currentReminders[0];
+      new Notification('House Payment Reminder ⏰', {
+        body: `You have ${currentReminders.length} overdue expense(s) > 7 days old! (e.g. ${first.description} - LKR ${first.share} to ${first.payerName})`,
+        icon: 'logo.png'
+      });
+    }
+  } catch (err) {
+    console.warn('Reminders check skipped:', err.message);
+  }
+}
+
+function openNotifModal() {
+  const overlay = document.getElementById('notif-modal-overlay');
+  const list = document.getElementById('notif-list');
+  const permBanner = document.getElementById('notif-perm-banner');
+  const adminBox = document.getElementById('admin-announcement-box');
+
+  const { isAdmin } = getAuthUser();
+  if (isAdmin && adminBox) {
+    adminBox.classList.remove('hidden');
+  } else if (adminBox) {
+    adminBox.classList.add('hidden');
+  }
+
+  if ('Notification' in window && Notification.permission === 'granted') {
+    permBanner.classList.add('hidden');
+  } else {
+    permBanner.classList.remove('hidden');
+  }
+
+  list.innerHTML = '';
+  if (currentReminders.length === 0) {
+    list.innerHTML = `
+      <div style="text-align:center; padding: 24px 12px; color: var(--text-muted); font-size: 0.82rem;">
+        🎉 No notifications or overdue payment reminders!
+      </div>
+    `;
+  } else {
+    currentReminders.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'notif-item';
+
+      let badgeClass = '';
+      let badgeText = '';
+
+      if (r.type === 'announcement') {
+        badgeClass = 'announcement';
+        badgeText = '📢 Announcement';
+      } else if (r.type === 'settlement_received') {
+        badgeClass = 'received';
+        badgeText = '💰 Payment';
+      } else {
+        badgeClass = '';
+        badgeText = `${r.daysOverdue} days ago`;
+      }
+
+      item.innerHTML = `
+        <div style="flex:1">
+          <div class="notif-item-title">${r.title || r.description}</div>
+          <div class="notif-item-sub">${r.message || `Owed to ${r.payerName}`}</div>
+        </div>
+        <span class="notif-item-badge ${badgeClass}">${badgeText}</span>
+      `;
+      list.appendChild(item);
     });
   }
+
+  overlay.classList.add('open');
+}
+
+function closeNotifModal() {
+  document.getElementById('notif-modal-overlay').classList.remove('open');
+}
+
+async function sendAdminAnnouncement() {
+  const titleInput = document.getElementById('admin-ann-title-input');
+  const msgInput = document.getElementById('admin-ann-msg-input');
+
+  const title = titleInput ? titleInput.value.trim() : '';
+  const message = msgInput ? msgInput.value.trim() : '';
+
+  if (!message) {
+    toast('Please write an announcement message', 'error');
+    return;
+  }
+
+  try {
+    await apiFetch('/api/reminders', {
+      method: 'POST',
+      body: JSON.stringify({ title, message })
+    });
+    toast('📢 Announcement broadcasted to all housemates!');
+    if (titleInput) titleInput.value = '';
+    if (msgInput) msgInput.value = '';
+    fetchReminders();
+  } catch (err) {
+    toast(err.message || 'Failed to post announcement', 'error');
+  }
+}
+
+async function requestPushPermission() {
+  if (!('Notification' in window)) {
+    toast('Browser push notifications are not supported on this device', 'error');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    toast('Notifications enabled! 🔔 You will receive overdue alerts.');
+    document.getElementById('notif-perm-banner').classList.add('hidden');
+    fetchReminders();
+  } else {
+    toast('Notification permission denied', 'error');
+  }
+}
+
+  // Reminders / Notification Modal Wiring
+  const notifBtn = document.getElementById('notif-btn');
+  if (notifBtn) notifBtn.addEventListener('click', openNotifModal);
+
+  const notifClose = document.getElementById('notif-modal-close');
+  if (notifClose) notifClose.addEventListener('click', closeNotifModal);
+
+  const notifCloseBtn = document.getElementById('notif-close-btn');
+  if (notifCloseBtn) notifCloseBtn.addEventListener('click', closeNotifModal);
+
+  const enablePushBtn = document.getElementById('enable-push-btn');
+  if (enablePushBtn) enablePushBtn.addEventListener('click', requestPushPermission);
+
+  const sendAnnBtn = document.getElementById('send-announcement-btn');
+  if (sendAnnBtn) sendAnnBtn.addEventListener('click', sendAdminAnnouncement);
+
+  const notifOverlay = document.getElementById('notif-modal-overlay');
+  if (notifOverlay) {
+    notifOverlay.addEventListener('click', e => {
+      if (e.target === notifOverlay) closeNotifModal();
+    });
+  }
+
 
   // Load data from MongoDB, then render
   await loadAll();
   renderDashboard();
+  fetchReminders();
 });
+

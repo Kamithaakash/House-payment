@@ -22,6 +22,10 @@
       "dest": "/api/settlements.js"
     },
     {
+      "src": "/api/reminders",
+      "dest": "/api/reminders.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
@@ -40,6 +44,12 @@
     {
       "src": "/(.*)",
       "dest": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/reminders",
+      "schedule": "0 9 * * *"
     }
   ]
 }

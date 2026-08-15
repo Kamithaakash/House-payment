@@ -232,7 +232,126 @@ async function handleApi(req, res, url) {
         createdAt: new Date(),
       };
       db.partialSettlements.push(record);
+
+      const payer = db.members.find(m => m.id === body.from);
+      db.notifications.push({
+        id: uid(),
+        targetMemberId: body.to,
+        type: 'settlement_received',
+        title: '💰 Payment Received',
+        message: `${payer ? payer.name : 'Housemate'} marked LKR ${Number(body.amount).toFixed(2)} as paid to you.`,
+        createdAt: new Date()
+      });
+
       return send(res, 201, record);
+    }
+    if (method === 'DELETE') {
+      const id = url.searchParams.get('id');
+      const idx = db.partialSettlements.findIndex(s => s.id === id);
+      if (idx === -1) return send(res, 404, { error: 'Settlement not found' });
+
+      const item = db.partialSettlements[idx];
+      const createdTime = new Date(item.createdAt || item.paidAt).getTime();
+      const elapsedMins = (Date.now() - createdTime) / (1000 * 60);
+
+      if (elapsedMins > 30) {
+        return send(res, 400, { error: `Undo time limit (30 minutes) has expired. (${Math.floor(elapsedMins)}m elapsed)` });
+      }
+
+      db.partialSettlements.splice(idx, 1);
+      return send(res, 200, { success: true });
+    }
+  }
+
+  /* ── /api/reminders ───────────────────────────────────────── */
+  if (pathname === '/api/reminders') {
+    const session = validateToken(req);
+
+    if (method === 'GET') {
+      const username = session ? session.username : 'admin';
+      const currentUserMember = db.members.find(m => m.name.toLowerCase() === username.toLowerCase());
+      const currentMemberId = currentUserMember ? currentUserMember.id : null;
+
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const now = new Date();
+      const reminders = [];
+
+      if (currentMemberId) {
+        db.expenses.filter(e => e.month === currentMonth).forEach(exp => {
+          const isSplit = exp.splitAmong && exp.splitAmong.includes(currentMemberId);
+          const isPayer = exp.paidBy === currentMemberId;
+
+          if (isSplit && !isPayer) {
+            const daysDiff = Math.floor((now - new Date(exp.date)) / (1000 * 60 * 60 * 24));
+            if (daysDiff >= 7 && (daysDiff - 7) % 5 === 0) {
+              const payer = db.members.find(m => m.id === exp.paidBy);
+              const share = Math.round((exp.amount / exp.splitAmong.length) * 100) / 100;
+              reminders.push({
+                type: 'overdue_payment',
+                id: exp.id,
+                title: '⏰ Payment Overdue',
+                message: `You owe ${payer ? payer.name : 'Housemate'} LKR ${share.toFixed(2)} for "${exp.description}" (${daysDiff} days ago)`,
+                share,
+                payerName: payer ? payer.name : 'Housemate',
+                daysOverdue: daysDiff,
+                date: exp.date
+              });
+            }
+          }
+        });
+      }
+
+      const userNotifs = currentMemberId
+        ? db.notifications.filter(n => n.targetMemberId === currentMemberId)
+        : [];
+
+      const combined = [
+        ...db.announcements.map(a => ({
+          type: 'announcement',
+          id: a.id,
+          title: a.title || '📢 Admin Announcement',
+          message: a.message,
+          createdAt: a.createdAt,
+          by: 'Admin'
+        })),
+        ...userNotifs.map(n => ({
+          type: 'settlement_received',
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          createdAt: n.createdAt
+        })),
+        ...reminders
+      ];
+
+      return send(res, 200, {
+        reminders: combined,
+        overdueCount: combined.length,
+        isAdmin: session ? session.username.toLowerCase() === 'admin' : true
+      });
+    }
+
+    if (method === 'POST') {
+      const username = session ? session.username : 'admin';
+      if (username.toLowerCase() !== 'admin') {
+        return send(res, 403, { error: 'Forbidden: Only Admin can send announcements' });
+      }
+
+      const body = await readBody(req);
+      if (!body.message || !body.message.trim()) {
+        return send(res, 400, { error: 'Announcement message is required' });
+      }
+
+      const doc = {
+        id: uid(),
+        title: body.title || '📢 Special House Announcement',
+        message: body.message.trim(),
+        createdAt: new Date(),
+        createdByName: 'Admin'
+      };
+
+      db.announcements.push(doc);
+      return send(res, 201, doc);
     }
   }
 
