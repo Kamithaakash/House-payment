@@ -83,7 +83,7 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const user = verifyToken(req);
-        if (!user) return res.status(401).json({ error: 'Unauthorized: Please log in' });
+        if (!user || user.username !== 'admin') return res.status(403).json({ error: 'Admin access required to create teams' });
         const { name, memberIds, color } = req.body || {};
         if (!name || !Array.isArray(memberIds) || !memberIds.length) {
           return res.status(400).json({ error: 'name and at least one memberId are required' });
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       }
       if (req.method === 'DELETE') {
         const user = verifyToken(req);
-        if (!user) return res.status(401).json({ error: 'Unauthorized: Please log in' });
+        if (!user || user.username !== 'admin') return res.status(403).json({ error: 'Admin access required to delete teams' });
         const { id } = req.query;
         if (!id || !ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid team ID' });
         const result = await db.collection('cleaningTeams').deleteOne({ _id: new ObjectId(id) });

@@ -145,7 +145,7 @@ function setGlobalLoading(on) {
 // ============================================================
 
 function fmt(n) {
-  return CURRENCY + ' ' + Math.abs(n).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return CURRENCY + ' ' + Math.round(Math.abs(n)).toLocaleString('en-LK');
 }
 
 // Returns ms remaining within the 2-hour edit window (negative = expired)
@@ -1753,18 +1753,27 @@ function _clDraw() {
       <div class="empty-state" style="padding:48px 24px">
         <div class="empty-icon">🧹</div>
         <h3>No Cleaning Teams Yet</h3>
-        <p>Create teams below to start the rotating schedule!</p>
+        <p>${isAdmin ? 'Create teams below to start the rotating schedule.' : 'Ask the admin to set up cleaning teams.'}</p>
       </div>`;
-    const mgr = document.createElement('div');
-    mgr.innerHTML = _clTeamManagerHtml(teams);
-    content.appendChild(mgr);
-    _clWireManager(content);
+    if (isAdmin) {
+      const mgr = document.createElement('div');
+      mgr.innerHTML = _clTeamManagerHtml(teams);
+      content.appendChild(mgr);
+      _clWireManager(content);
+    }
     return;
   }
 
-  // ── Banner: Next Cleaning ─────────────────────────────────
-  const nextPending = schedule.find(s => s.date >= today && !s.completed);
-  content.appendChild(_clBanner(nextPending, currentMemberId));
+  // ── Banner: Current Cleaning Team ──────────────────────────
+  const currentWeekSession = schedule.find(s => {
+    const d = new Date(s.date);
+    const endOfWeek = new Date(d);
+    endOfWeek.setDate(d.getDate() + 6);
+    const endOfWeekStr = endOfWeek.toISOString().slice(0, 10);
+    return today >= s.date && today <= endOfWeekStr;
+  }) || schedule.find(s => s.date >= today) || schedule[0];
+
+  content.appendChild(_clBanner(currentWeekSession, currentMemberId));
 
   // ── Schedule Roster ────────────────────────────────────────
   const section = document.createElement('div');
@@ -1794,10 +1803,12 @@ function _clDraw() {
     ${rosterHtml}`;
   content.appendChild(section);
 
-  // ── Team Manager (Accessible to all members) ─────────────
-  const mgr = document.createElement('div');
-  mgr.innerHTML = _clTeamManagerHtml(teams);
-  content.appendChild(mgr);
+  // ── Team Manager (Admin Only) ─────────────────────────────
+  if (isAdmin) {
+    const mgr = document.createElement('div');
+    mgr.innerHTML = _clTeamManagerHtml(teams);
+    content.appendChild(mgr);
+  }
 
   // ── Wire events ───────────────────────────────────────────
   content.querySelectorAll('[data-cl-done]').forEach(btn =>
@@ -1806,7 +1817,7 @@ function _clDraw() {
   content.querySelectorAll('[data-cl-undo]').forEach(btn =>
     btn.addEventListener('click', () => _clUndoDone(btn.dataset.clUndo))
   );
-  _clWireManager(content);
+  if (isAdmin) _clWireManager(content);
 }
 
 function _clBanner(session, currentMemberId) {
@@ -1818,7 +1829,7 @@ function _clBanner(session, currentMemberId) {
         <span style="font-size:2.2rem">🎉</span>
         <div>
           <div class="cl-banner-team">All Caught Up!</div>
-          <div class="cl-banner-meta">No upcoming cleaning sessions pending.</div>
+          <div class="cl-banner-meta">No cleaning team scheduled.</div>
         </div>
       </div>`;
     return el;
@@ -1835,25 +1846,32 @@ function _clBanner(session, currentMemberId) {
   const isMyTeam  = team?.memberIds?.includes(currentMemberId);
   const canModify = isAdmin || isMyTeam;
 
+  let actionBtnHtml = '';
+  if (session.completed) {
+    actionBtnHtml = `<span class="cl-badge cl-badge-done" style="font-size:0.85rem;padding:8px 16px">✓ Completed by ${session.doneBy}</span>`;
+  } else if (canModify) {
+    actionBtnHtml = `
+      <button class="btn btn-primary cl-banner-btn"
+        data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Mark Done
+      </button>`;
+  }
+
   el.innerHTML = `
     <div class="cl-banner-inner" style="border-left:4px solid ${team?.color || '#10b981'}">
       <div class="cl-banner-left">
         <div class="cl-banner-icon">🧹</div>
         <div>
-          <div class="cl-banner-label">Next Cleaning</div>
+          <div class="cl-banner-label">CURRENT CLEANING TEAM</div>
           <div class="cl-banner-team" style="color:${team?.color || '#10b981'}">${team?.name || '—'}</div>
           <div class="cl-banner-meta">All Team Members: <strong>${members}</strong></div>
           <div class="cl-banner-date">📅 <strong>${weekLabel}</strong> (${rangeStr})</div>
         </div>
       </div>
-      ${canModify ? `
-        <button class="btn btn-primary cl-banner-btn"
-          data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Mark Done
-        </button>` : ''}
+      ${actionBtnHtml}
     </div>`;
   return el;
 }
@@ -1930,6 +1948,9 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
 }
 
 function _clTeamManagerHtml(teams) {
+  const { isAdmin } = getAuthUser();
+  if (!isAdmin) return '';
+
   const cards = teams.map(t => {
     const members = (t.memberIds || [])
       .map(id => state.members.find(m => m.id === id)?.name || id)

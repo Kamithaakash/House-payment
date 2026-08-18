@@ -3625,6 +3625,15 @@ body:not(.is-admin) .admin-only {
     gap: 14px;
     padding: 16px 18px;
   }
+  .cl-banner-left {
+    gap: 12px;
+  }
+  .cl-banner-team {
+    font-size: 1.05rem;
+  }
+  .cl-banner-meta {
+    font-size: 0.78rem;
+  }
   .cl-banner-btn {
     width: 100%;
     justify-content: center;
