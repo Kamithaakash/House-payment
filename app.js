@@ -1823,6 +1823,7 @@ function _clBanner(session, currentMemberId) {
       </div>`;
     return el;
   }
+  const { isAdmin } = getAuthUser();
   const team        = session.team;
   const members     = (team?.memberIds || []).map(id => state.members.find(m => m.id === id)?.name || id).join(' · ');
   const sessionDate = new Date(session.date);
@@ -1830,6 +1831,9 @@ function _clBanner(session, currentMemberId) {
   endOfWeek.setDate(sessionDate.getDate() + 6);
   const weekLabel   = `Week ${(session.weekNum !== undefined ? session.weekNum : session.sessionIndex) + 1}`;
   const rangeStr    = `${sessionDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${endOfWeek.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+
+  const isMyTeam  = team?.memberIds?.includes(currentMemberId);
+  const canModify = isAdmin || isMyTeam;
 
   el.innerHTML = `
     <div class="cl-banner-inner" style="border-left:4px solid ${team?.color || '#10b981'}">
@@ -1842,13 +1846,14 @@ function _clBanner(session, currentMemberId) {
           <div class="cl-banner-date">📅 <strong>${weekLabel}</strong> (${rangeStr})</div>
         </div>
       </div>
-      <button class="btn btn-primary cl-banner-btn"
-        data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-        Mark Done
-      </button>
+      ${canModify ? `
+        <button class="btn btn-primary cl-banner-btn"
+          data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Mark Done
+        </button>` : ''}
     </div>`;
   return el;
 }
@@ -1857,14 +1862,23 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
   const team = session.team;
   if (!team) return '';
 
-  const d           = new Date(session.date);
-  const endOfWeek   = new Date(d);
+  const d            = new Date(session.date);
+  const endOfWeek    = new Date(d);
   endOfWeek.setDate(d.getDate() + 6);
-  const weekLabel   = `Week ${(session.weekNum !== undefined ? session.weekNum : session.sessionIndex) + 1}`;
-  const rangeStr    = `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${endOfWeek.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+  const endOfWeekStr = endOfWeek.toISOString().slice(0, 10);
 
-  const isToday   = session.date === today;
-  const isOverdue = session.date < today && !session.completed;
+  const weekLabel    = `Week ${(session.weekNum !== undefined ? session.weekNum : session.sessionIndex) + 1}`;
+  const rangeStr     = `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${endOfWeek.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+
+  // Week Status rules:
+  // Current Week: today is between start of week (session.date) and end of week (Sunday)
+  const isCurrentWeek = today >= session.date && today <= endOfWeekStr;
+  // Overdue: today has passed Sunday of that week AND not completed
+  const isOverdue     = today > endOfWeekStr && !session.completed;
+
+  // Permission check: only admin or assigned team members can mark done or undo
+  const isMyTeam  = (team.memberIds || []).includes(currentMemberId);
+  const canModify = isAdmin || isMyTeam;
 
   const memberNames = (team.memberIds || [])
     .map(id => state.members.find(m => m.id === id)?.name || id)
@@ -1875,20 +1889,26 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
 
   if (session.completed) {
     statusHtml = `<span class="cl-done-check">✓</span><span class="cl-done-by">Done by <strong>${session.doneBy}</strong></span>`;
-    actionHtml = `<button class="cl-undo-btn" data-cl-undo="${session.sessionKey}">↩ Undo</button>`;
+    if (canModify) {
+      actionHtml = `<button class="cl-undo-btn" data-cl-undo="${session.sessionKey}">↩ Undo</button>`;
+    }
+  } else if (isCurrentWeek) {
+    statusHtml = '<span class="cl-badge cl-badge-now">This Week</span>';
+    if (canModify) {
+      actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    }
   } else if (isOverdue) {
     statusHtml = '<span class="cl-tag cl-tag-overdue">⚠️ Overdue</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
-  } else if (isToday) {
-    statusHtml = '<span class="cl-badge cl-badge-now">This Week</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    if (canModify) {
+      actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    }
   } else {
-    statusHtml = '<span class="cl-tag cl-tag-pending">Pending</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    // Upcoming future week: status is "Upcoming", and button is NOT available until the week comes!
+    statusHtml = '<span class="cl-tag cl-tag-pending">Upcoming</span>';
   }
 
   return `
-    <div class="cl-card ${session.completed ? 'cl-card-done' : ''} ${isOverdue ? 'cl-card-overdue' : ''} ${isToday ? 'cl-card-current' : ''}" style="border-left: 4px solid ${team.color};">
+    <div class="cl-card ${session.completed ? 'cl-card-done' : ''} ${isOverdue ? 'cl-card-overdue' : ''} ${isCurrentWeek ? 'cl-card-current' : ''}" style="border-left: 4px solid ${team.color};">
       <div class="cl-card-header">
         <div class="cl-card-week-info">
           <span class="cl-card-week-title">${weekLabel}</span>
@@ -1905,9 +1925,7 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
           👥 <span>${memberNames}</span>
         </div>
       </div>
-      <div class="cl-card-footer">
-        ${actionHtml}
-      </div>
+      ${actionHtml ? `<div class="cl-card-footer">${actionHtml}</div>` : ''}
     </div>`;
 }
 
