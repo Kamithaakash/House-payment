@@ -20,7 +20,7 @@
 import { connectToDatabase, setCors, verifyToken } from './_db.js';
 import { ObjectId } from 'mongodb';
 
-const DEFAULT_CLEANING_DAYS = [1, 4]; // Monday=1, Thursday=4
+const DEFAULT_CLEANING_DAYS = [1]; // Monday only (1 cleaning day per week)
 
 function getThisMonday() {
   const d = new Date();
@@ -33,7 +33,7 @@ function getThisMonday() {
 
 function generateSchedule(teams, config, completionMap) {
   if (!teams.length) return [];
-  const cleaningDays = config.cleaningDays || DEFAULT_CLEANING_DAYS;
+  const cleaningDays = [1]; // Exactly 1 cleaning day per week (Monday)
   const startMs      = new Date(config.startDate || getThisMonday()).setHours(0, 0, 0, 0);
   const start        = new Date(startMs);
   const weeksWindow  = Math.max(16, teams.length * 4);
