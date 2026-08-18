@@ -820,11 +820,9 @@ function renderMembers() {
     return;
   }
 
-  const month        = currentMonth();
+  const month         = currentMonth();
   const monthExpenses = state.expenses.filter(e => e.month === month);
-  const totalPaidAll = monthExpenses.reduce((s, e) => s + e.amount, 0);
   const { isAdmin, currentMemberId } = getAuthUser();
-  const balances     = computeBalances(month);
 
   // Calculate paid amounts for all members to find the top contributor
   let maxPaid = 0;
@@ -834,57 +832,24 @@ function renderMembers() {
   });
 
   state.members.forEach(m => {
-    const paid     = monthExpenses.filter(e => e.paidBy === m.id).reduce((s, e) => s + e.amount, 0);
-    // ownShare = this member's personal portion of all expenses they are split into
-    const ownShare = monthExpenses
-      .filter(e => e.splitAmong.includes(m.id))
-      .reduce((s, e) => s + e.amount / e.splitAmong.length, 0);
-    const pct   = totalPaidAll > 0 ? (paid / totalPaidAll * 100) : 0;
+    const paid  = monthExpenses.filter(e => e.paidBy === m.id).reduce((s, e) => s + e.amount, 0);
     const isTop = maxPaid > 0 && paid === maxPaid;
     const isMe  = m.id === currentMemberId;
-    const net   = balances[m.id] ?? 0; // positive = others owe this member; negative = this member owes others
-
-    // Shared colour/label helpers for net balance
-    const netLabel = net > 0.01 ? '🟢 To Collect' : net < -0.01 ? '🔴 To Pay' : 'Status';
-    const netColor = net > 0.01 ? 'var(--emerald)' : net < -0.01 ? 'var(--gold-light)' : 'var(--text-dim)';
-    const netVal   = net > 0.01 ? `+${fmt(net)}` : net < -0.01 ? `-${fmt(Math.abs(net))}` : '✅ Settled';
-
-    // Shared 2-box stat layout for all members (keeping cards compact and consistent)
-    const statsHtml = `
-      <div class="stat-box">
-        <div class="stat-box-label">Paid Out</div>
-        <div class="stat-box-value stat-paid">${fmt(paid)}</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-box-label">${netLabel}</div>
-        <div class="stat-box-value" style="color:${netColor}">${netVal}</div>
-      </div>
-    `;
 
     const card = document.createElement('div');
     card.className = 'member-card';
     card.style.borderTop = `3px solid ${m.color}`;
 
     card.innerHTML = `
-      <div class="member-header">
+      <div class="member-header" style="margin-bottom:0">
         <div class="member-avatar" style="background:${m.color}">${initials(m.name)}</div>
         <div>
           <div class="member-name">${m.name}${isMe ? ' <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(You)</span>' : ''}</div>
-          <div class="member-role" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <div class="member-role" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
             Housemate
-            ${isMe ? `· <span style="color:var(--text-muted)">Share: ${fmt(ownShare)}</span>` : ''}
             ${isTop ? `<span class="top-contributor-badge">👑 Top Contributor</span>` : ''}
           </div>
         </div>
-      </div>
-      <div class="member-stats" style="grid-template-columns: 1fr 1fr;">
-        ${statsHtml}
-      </div>
-      <div class="member-progress">
-        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-dim);margin-bottom:5px">
-          <span>Contribution Share</span><span>${pct.toFixed(1)}%</span>
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       </div>
     `;
 
