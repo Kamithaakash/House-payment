@@ -1789,7 +1789,7 @@ function _clDraw() {
         <polyline points="9 14 11 16 15 12"/>
       </svg>
       Cleaning Roster
-      <span class="cl-rotation-info">(${teams.length} team${teams.length !== 1 ? 's' : ''} · rotates every ${teams.length} cleaning sessions)</span>
+      <span class="cl-rotation-info">(${teams.length} team${teams.length !== 1 ? 's' : ''} · same team returns every ${teams.length} week${teams.length !== 1 ? 's' : ''})</span>
     </h2>
     ${rosterHtml}`;
   content.appendChild(section);
@@ -1960,6 +1960,16 @@ function _clWireManager(container) {
 }
 
 async function _clMarkDone(sessionKey, teamId) {
+  const session = cleaningState.schedule.find(s => s.sessionKey === sessionKey);
+  const teamName = session?.team?.name || 'this team';
+  const { username } = getAuthUser();
+
+  const ok = await showConfirm(
+    'Confirm Cleaning Completed',
+    `Are you sure you want to mark the cleaning for ${teamName} as DONE by ${username}?`
+  );
+  if (!ok) return;
+
   try {
     await cleaningApi.markDone({ sessionKey, teamId });
     toast('✅ Cleaning session marked as done!');

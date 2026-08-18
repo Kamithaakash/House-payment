@@ -46,11 +46,13 @@ function generateSchedule(teams, config, completionMap) {
 
   while (d <= end) {
     if (cleaningDays.includes(d.getDay())) {
-      const key        = d.toISOString().slice(0, 10);
-      const team       = teams[sessionGlobalIndex % teams.length];
-      const completion = completionMap[key];
+      const key           = d.toISOString().slice(0, 10);
+      const daysFromStart = Math.floor((d - start) / (1000 * 60 * 60 * 24));
+      const weekNum       = Math.floor(daysFromStart / 7);
+      const team          = teams[weekNum % teams.length];
+      const completion    = completionMap[key];
       sessions.push({
-        sessionKey: key, date: key, team,
+        sessionKey: key, date: key, team, weekNum,
         sessionIndex: sessionGlobalIndex,
         completed: !!completion,
         doneBy:  completion ? completion.doneBy  : null,
