@@ -36,7 +36,7 @@ function generateSchedule(teams, config, completionMap) {
   const cleaningDays = config.cleaningDays || DEFAULT_CLEANING_DAYS;
   const startMs      = new Date(config.startDate || getThisMonday()).setHours(0, 0, 0, 0);
   const start        = new Date(startMs);
-  const weeksWindow  = Math.max(14, teams.length * 4 + 4);
+  const weeksWindow  = Math.max(16, teams.length * 4);
   const end          = new Date(startMs);
   end.setDate(end.getDate() + weeksWindow * 7);
 
@@ -46,13 +46,11 @@ function generateSchedule(teams, config, completionMap) {
 
   while (d <= end) {
     if (cleaningDays.includes(d.getDay())) {
-      const key           = d.toISOString().slice(0, 10);
-      const daysFromStart = Math.round((d - start) / (1000 * 60 * 60 * 24));
-      const blockNum      = Math.floor(daysFromStart / 14);
-      const team          = teams[blockNum % teams.length];
-      const completion    = completionMap[key];
+      const key        = d.toISOString().slice(0, 10);
+      const team       = teams[sessionGlobalIndex % teams.length];
+      const completion = completionMap[key];
       sessions.push({
-        sessionKey: key, date: key, team, blockNum,
+        sessionKey: key, date: key, team,
         sessionIndex: sessionGlobalIndex,
         completed: !!completion,
         doneBy:  completion ? completion.doneBy  : null,
@@ -83,7 +81,7 @@ export default async function handler(req, res) {
       }
       if (req.method === 'POST') {
         const user = verifyToken(req);
-        if (!user || user.username !== 'admin') return res.status(403).json({ error: 'Admin access only' });
+        if (!user) return res.status(401).json({ error: 'Unauthorized: Please log in' });
         const { name, memberIds, color } = req.body || {};
         if (!name || !Array.isArray(memberIds) || !memberIds.length) {
           return res.status(400).json({ error: 'name and at least one memberId are required' });
@@ -95,7 +93,7 @@ export default async function handler(req, res) {
       }
       if (req.method === 'DELETE') {
         const user = verifyToken(req);
-        if (!user || user.username !== 'admin') return res.status(403).json({ error: 'Admin access only' });
+        if (!user) return res.status(401).json({ error: 'Unauthorized: Please log in' });
         const { id } = req.query;
         if (!id || !ObjectId.isValid(id)) return res.status(400).json({ error: 'Invalid team ID' });
         const result = await db.collection('cleaningTeams').deleteOne({ _id: new ObjectId(id) });

@@ -1753,14 +1753,12 @@ function _clDraw() {
       <div class="empty-state" style="padding:48px 24px">
         <div class="empty-icon">🧹</div>
         <h3>No Cleaning Teams Yet</h3>
-        <p>${isAdmin ? 'Create teams below to start the rotating schedule.' : 'Ask the admin to set up cleaning teams.'}</p>
+        <p>Create teams below to start the rotating schedule!</p>
       </div>`;
-    if (isAdmin) {
-      const mgr = document.createElement('div');
-      mgr.innerHTML = _clTeamManagerHtml(teams);
-      content.appendChild(mgr);
-      _clWireManager(content);
-    }
+    const mgr = document.createElement('div');
+    mgr.innerHTML = _clTeamManagerHtml(teams);
+    content.appendChild(mgr);
+    _clWireManager(content);
     return;
   }
 
@@ -1768,27 +1766,18 @@ function _clDraw() {
   const nextPending = schedule.find(s => s.date >= today && !s.completed);
   content.appendChild(_clBanner(nextPending, currentMemberId));
 
-  // ── Schedule Timeline ──────────────────────────────────────
+  // ── Schedule Roster ────────────────────────────────────────
   const section = document.createElement('div');
   section.className = 'cleaning-section';
 
-  // Group sessions into 2-week blocks
-  const blocksMap = new Map();
-  schedule.forEach(s => {
-    if (!blocksMap.has(s.blockNum)) {
-      blocksMap.set(s.blockNum, { blockNum: s.blockNum, team: s.team, sessions: [] });
-    }
-    blocksMap.get(s.blockNum).sessions.push(s);
-  });
-  const allBlocks        = [...blocksMap.values()].sort((a, b) => a.blockNum - b.blockNum);
-  const currentBlockNum  = schedule.find(s => s.date >= today)?.blockNum ?? (allBlocks[0]?.blockNum ?? 0);
-  const visibleBlocks    = allBlocks.filter(b =>
-    b.blockNum >= Math.max(0, currentBlockNum - 1) && b.blockNum <= currentBlockNum + 4
-  );
+  // Filter visible sessions (past 2 + next 12 sessions)
+  const todayIdx   = schedule.findIndex(s => s.date >= today);
+  const startIdx   = Math.max(0, (todayIdx === -1 ? 0 : todayIdx) - 2);
+  const visible    = schedule.slice(startIdx, startIdx + 14);
 
-  let timelineHtml = '<div class="cl-timeline">';
-  visibleBlocks.forEach(b => { timelineHtml += _clBlockHtml(b, today, currentMemberId, isAdmin, currentBlockNum); });
-  timelineHtml += '</div>';
+  let rosterHtml = '<div class="cl-timeline">';
+  visible.forEach(s => { rosterHtml += _clSessionHtml(s, today, currentMemberId, isAdmin); });
+  rosterHtml += '</div>';
 
   section.innerHTML = `
     <h2 class="card-title" style="margin-bottom:20px">
@@ -1799,13 +1788,13 @@ function _clDraw() {
         <line x1="3" y1="10" x2="21" y2="10"/>
         <polyline points="9 14 11 16 15 12"/>
       </svg>
-      Cleaning Rotation
-      <span class="cl-rotation-info">(${teams.length} team${teams.length !== 1 ? 's' : ''} · same team every ${teams.length * 2} weeks)</span>
+      Cleaning Roster
+      <span class="cl-rotation-info">(${teams.length} team${teams.length !== 1 ? 's' : ''} · rotates every ${teams.length} cleaning sessions)</span>
     </h2>
-    ${timelineHtml}`;
+    ${rosterHtml}`;
   content.appendChild(section);
 
-  // ── Team Manager (admin) ──────────────────────────────────
+  // ── Team Manager (Accessible to all members) ─────────────
   const mgr = document.createElement('div');
   mgr.innerHTML = _clTeamManagerHtml(teams);
   content.appendChild(mgr);
@@ -1848,94 +1837,79 @@ function _clBanner(session, currentMemberId) {
       <div class="cl-banner-left">
         <div class="cl-banner-icon">🧹</div>
         <div>
-          <div class="cl-banner-label">Next Cleaning</div>
+          <div class="cl-banner-label">Next Cleaning Day</div>
           <div class="cl-banner-team" style="color:${team?.color || '#10b981'}">${team?.name || '—'}</div>
-          <div class="cl-banner-meta">${members}</div>
+          <div class="cl-banner-meta">All Team Members: <strong>${members}</strong></div>
           <div class="cl-banner-date">📅 ${dateLabel}</div>
         </div>
       </div>
-      ${isMyTeam ? `
-        <button class="btn btn-primary cl-banner-btn"
-          data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-          Mark Done
-        </button>` : ''}
+      <button class="btn btn-primary cl-banner-btn"
+        data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        Mark Done
+      </button>
     </div>`;
   return el;
 }
 
-function _clBlockHtml(block, today, currentMemberId, isAdmin, currentBlockNum) {
-  const team = block.team;
+function _clSessionHtml(session, today, currentMemberId, isAdmin) {
+  const team = session.team;
   if (!team) return '';
 
-  const allDone        = block.sessions.every(s => s.completed);
-  const isPastBlock    = block.sessions[block.sessions.length - 1].date < today;
-  const isCurrentBlock = block.blockNum === currentBlockNum;
-  const firstDate      = new Date(block.sessions[0].date);
-  const lastDate       = new Date(block.sessions[block.sessions.length - 1].date);
-  const rangeLabel     = `${firstDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${lastDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
-  const memberNames    = (team.memberIds || []).map(id => state.members.find(m => m.id === id)?.name || id).join(' · ');
-  const isMyTeam       = (team.memberIds || []).includes(currentMemberId);
+  const d         = new Date(session.date);
+  const dayName   = CL_DAY_FULL[d.getDay()];
+  const dateStr   = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const isToday   = session.date === today;
+  const isOverdue = session.date < today && !session.completed;
 
-  let badgeHtml = '';
-  if (allDone)                    badgeHtml = '<span class="cl-badge cl-badge-done">✓ Complete</span>';
-  else if (isPastBlock)           badgeHtml = '<span class="cl-badge cl-badge-late">Incomplete</span>';
-  else if (isCurrentBlock)        badgeHtml = '<span class="cl-badge cl-badge-now">Current</span>';
+  const memberNames = (team.memberIds || [])
+    .map(id => state.members.find(m => m.id === id)?.name || id)
+    .join(' · ');
 
-  let sessionsHtml = '';
-  block.sessions.forEach(s => {
-    const d        = new Date(s.date);
-    const dayName  = CL_DAY_FULL[d.getDay()];
-    const dateStr  = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    const isOver   = s.date < today && !s.completed;
+  const isMyTeam = (team.memberIds || []).includes(currentMemberId);
 
-    let statusHtml = '';
-    let actionHtml = '';
+  let statusHtml = '';
+  let actionHtml = '';
 
-    if (s.completed) {
-      statusHtml = `<span class="cl-done-check">✓</span><span class="cl-done-by">Done by <strong>${s.doneBy}</strong></span>`;
-      if (isMyTeam || isAdmin) {
-        actionHtml = `<button class="cl-undo-btn" data-cl-undo="${s.sessionKey}">↩ Undo</button>`;
-      }
-    } else if (isOver) {
-      statusHtml = '<span class="cl-tag cl-tag-overdue">⚠️ Overdue</span>';
-      if (isMyTeam) actionHtml = `<button class="cl-check-btn" data-cl-done="${s.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
-    } else {
-      statusHtml = '<span class="cl-tag cl-tag-pending">Pending</span>';
-      if (isMyTeam) actionHtml = `<button class="cl-check-btn" data-cl-done="${s.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
-    }
+  if (session.completed) {
+    statusHtml = `<span class="cl-done-check">✓</span><span class="cl-done-by">Done by <strong>${session.doneBy}</strong></span>`;
+    actionHtml = `<button class="cl-undo-btn" data-cl-undo="${session.sessionKey}">↩ Undo</button>`;
+  } else if (isOverdue) {
+    statusHtml = '<span class="cl-tag cl-tag-overdue">⚠️ Overdue</span>';
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+  } else if (isToday) {
+    statusHtml = '<span class="cl-badge cl-badge-now">Today</span>';
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+  } else {
+    statusHtml = '<span class="cl-tag cl-tag-pending">Pending</span>';
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+  }
 
-    sessionsHtml += `
-      <div class="cl-session ${s.completed ? 'cl-session-done' : ''} ${isOver ? 'cl-session-overdue' : ''}">
-        <div class="cl-session-date">
-          <div class="cl-session-day">${dayName}</div>
+  return `
+    <div class="cl-block ${session.completed ? 'cl-block-done' : ''} ${isOverdue ? 'cl-block-overdue' : ''} ${isToday ? 'cl-block-current' : ''}">
+      <div class="cl-session" style="border-left:4px solid ${team.color}; padding:14px 18px;">
+        <div class="cl-session-date" style="min-width:110px">
+          <div class="cl-session-day" style="font-size:0.9rem; font-weight:700">${dayName}</div>
           <div class="cl-session-dstr">${dateStr}</div>
+        </div>
+        <div style="flex:1; margin:0 12px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span class="cl-block-dot" style="background:${team.color}"></span>
+            <span style="font-weight:700; font-size:0.9rem; color:${team.color}">${team.name}</span>
+          </div>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px">
+            👥 All Team Members: <strong style="color:var(--text)">${memberNames}</strong>
+          </div>
         </div>
         <div class="cl-session-status">${statusHtml}</div>
         <div class="cl-session-action">${actionHtml}</div>
-      </div>`;
-  });
-
-  return `
-    <div class="cl-block ${allDone ? 'cl-block-done' : ''} ${isPastBlock && !allDone ? 'cl-block-overdue' : ''} ${isCurrentBlock ? 'cl-block-current' : ''}">
-      <div class="cl-block-header" style="border-left:3px solid ${team.color}">
-        <div class="cl-block-dot" style="background:${team.color}"></div>
-        <div class="cl-block-info">
-          <div class="cl-block-name" style="color:${team.color}">${team.name}</div>
-          <div class="cl-block-meta">${memberNames} · ${rangeLabel}</div>
-        </div>
-        ${badgeHtml}
       </div>
-      <div class="cl-sessions">${sessionsHtml}</div>
     </div>`;
 }
 
 function _clTeamManagerHtml(teams) {
-  const { isAdmin } = getAuthUser();
-  if (!isAdmin) return '';
-
   const cards = teams.map(t => {
     const members = (t.memberIds || [])
       .map(id => state.members.find(m => m.id === id)?.name || id)
@@ -1962,7 +1936,7 @@ function _clTeamManagerHtml(teams) {
             <circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
           </svg>
-          Manage Teams
+          Manage Cleaning Teams
         </h2>
         <button class="btn btn-primary" id="cl-add-team-btn" style="padding:8px 16px;font-size:0.82rem">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px">
@@ -1972,7 +1946,7 @@ function _clTeamManagerHtml(teams) {
         </button>
       </div>
       <div class="cl-teams-grid">
-        ${teams.length ? cards : '<div style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:20px 0">No teams yet. Create your first team!</div>'}
+        ${teams.length ? cards : '<div style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:20px 0">No teams created yet. Click "Create Team" to set up your first cleaning team!</div>'}
       </div>
     </div>`;
 }
