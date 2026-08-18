@@ -1826,21 +1826,20 @@ function _clBanner(session, currentMemberId) {
   const team        = session.team;
   const members     = (team?.memberIds || []).map(id => state.members.find(m => m.id === id)?.name || id).join(' · ');
   const sessionDate = new Date(session.date);
-  const today       = new Date().toISOString().slice(0, 10);
-  const dateLabel   = session.date === today
-    ? 'Today'
-    : sessionDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
-  const isMyTeam    = team?.memberIds?.includes(currentMemberId);
+  const endOfWeek   = new Date(sessionDate);
+  endOfWeek.setDate(sessionDate.getDate() + 6);
+  const weekLabel   = `Week ${(session.weekNum !== undefined ? session.weekNum : session.sessionIndex) + 1}`;
+  const rangeStr    = `${sessionDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${endOfWeek.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
 
   el.innerHTML = `
     <div class="cl-banner-inner" style="border-left:4px solid ${team?.color || '#10b981'}">
       <div class="cl-banner-left">
         <div class="cl-banner-icon">🧹</div>
         <div>
-          <div class="cl-banner-label">Next Cleaning Day</div>
+          <div class="cl-banner-label">Next Cleaning</div>
           <div class="cl-banner-team" style="color:${team?.color || '#10b981'}">${team?.name || '—'}</div>
           <div class="cl-banner-meta">All Team Members: <strong>${members}</strong></div>
-          <div class="cl-banner-date">📅 ${dateLabel}</div>
+          <div class="cl-banner-date">📅 <strong>${weekLabel}</strong> (${rangeStr})</div>
         </div>
       </div>
       <button class="btn btn-primary cl-banner-btn"
@@ -1858,17 +1857,18 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
   const team = session.team;
   if (!team) return '';
 
-  const d         = new Date(session.date);
-  const dayName   = CL_DAY_FULL[d.getDay()];
-  const dateStr   = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const d           = new Date(session.date);
+  const endOfWeek   = new Date(d);
+  endOfWeek.setDate(d.getDate() + 6);
+  const weekLabel   = `Week ${(session.weekNum !== undefined ? session.weekNum : session.sessionIndex) + 1}`;
+  const rangeStr    = `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${endOfWeek.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
+
   const isToday   = session.date === today;
   const isOverdue = session.date < today && !session.completed;
 
   const memberNames = (team.memberIds || [])
     .map(id => state.members.find(m => m.id === id)?.name || id)
     .join(' · ');
-
-  const isMyTeam = (team.memberIds || []).includes(currentMemberId);
 
   let statusHtml = '';
   let actionHtml = '';
@@ -1878,33 +1878,35 @@ function _clSessionHtml(session, today, currentMemberId, isAdmin) {
     actionHtml = `<button class="cl-undo-btn" data-cl-undo="${session.sessionKey}">↩ Undo</button>`;
   } else if (isOverdue) {
     statusHtml = '<span class="cl-tag cl-tag-overdue">⚠️ Overdue</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
   } else if (isToday) {
-    statusHtml = '<span class="cl-badge cl-badge-now">Today</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    statusHtml = '<span class="cl-badge cl-badge-now">This Week</span>';
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
   } else {
     statusHtml = '<span class="cl-tag cl-tag-pending">Pending</span>';
-    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    actionHtml = `<button class="cl-check-btn" data-cl-done="${session.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
   }
 
   return `
-    <div class="cl-block ${session.completed ? 'cl-block-done' : ''} ${isOverdue ? 'cl-block-overdue' : ''} ${isToday ? 'cl-block-current' : ''}">
-      <div class="cl-session" style="border-left:4px solid ${team.color}; padding:14px 18px;">
-        <div class="cl-session-date" style="min-width:110px">
-          <div class="cl-session-day" style="font-size:0.9rem; font-weight:700">${dayName}</div>
-          <div class="cl-session-dstr">${dateStr}</div>
+    <div class="cl-card ${session.completed ? 'cl-card-done' : ''} ${isOverdue ? 'cl-card-overdue' : ''} ${isToday ? 'cl-card-current' : ''}" style="border-left: 4px solid ${team.color};">
+      <div class="cl-card-header">
+        <div class="cl-card-week-info">
+          <span class="cl-card-week-title">${weekLabel}</span>
+          <span class="cl-card-week-range">${rangeStr}</span>
         </div>
-        <div style="flex:1; margin:0 12px">
-          <div style="display:flex; align-items:center; gap:8px">
-            <span class="cl-block-dot" style="background:${team.color}"></span>
-            <span style="font-weight:700; font-size:0.9rem; color:${team.color}">${team.name}</span>
-          </div>
-          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:3px">
-            👥 All Team Members: <strong style="color:var(--text)">${memberNames}</strong>
-          </div>
+        <div class="cl-card-status-badge">${statusHtml}</div>
+      </div>
+      <div class="cl-card-body">
+        <div class="cl-card-team-title" style="color:${team.color}">
+          <span class="cl-block-dot" style="background:${team.color}"></span>
+          ${team.name}
         </div>
-        <div class="cl-session-status">${statusHtml}</div>
-        <div class="cl-session-action">${actionHtml}</div>
+        <div class="cl-card-members">
+          👥 <span>${memberNames}</span>
+        </div>
+      </div>
+      <div class="cl-card-footer">
+        ${actionHtml}
       </div>
     </div>`;
 }
