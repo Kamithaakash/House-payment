@@ -3294,4 +3294,243 @@ body:not(.is-admin) .admin-only {
   transform: scale(0.96);
 }
 
-
+
+/* ============================================================
+   CLEANING SCHEDULE TAB
+   ============================================================ */
+
+/* ── Banner ───────────────────────────────────────────────── */
+.cl-banner { margin-bottom: 24px; }
+
+.cl-banner-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  transition: box-shadow 0.2s;
+}
+
+.cl-banner-settled {
+  border-left: 4px solid var(--green) !important;
+  gap: 16px;
+}
+
+.cl-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cl-banner-icon { font-size: 2.4rem; line-height: 1; flex-shrink: 0; }
+
+.cl-banner-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.cl-banner-team  { font-size: 1.2rem; font-weight: 800; }
+.cl-banner-meta  { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; }
+.cl-banner-date  { font-size: 0.73rem; color: var(--text-muted); margin-top: 4px; }
+.cl-banner-btn   { flex-shrink: 0; }
+
+/* ── Section card ─────────────────────────────────────────── */
+.cleaning-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+
+/* ── Rotation info subtitle ──────────────────────────────── */
+.cl-rotation-info {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+/* ── Timeline ────────────────────────────────────────────── */
+.cl-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Block ───────────────────────────────────────────────── */
+.cl-block {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+.cl-block-done    { opacity: 0.5; }
+.cl-block-overdue { border-color: rgba(248, 113, 113, 0.3); }
+.cl-block-current {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.15);
+}
+
+.cl-block-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-hover);
+}
+.cl-block-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cl-block-name { font-weight: 700; font-size: 0.87rem; }
+.cl-block-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+.cl-badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.cl-badge-done { background: rgba(74,222,128,0.15); color: var(--green); }
+.cl-badge-late { background: rgba(248,113,113,0.15); color: var(--red); }
+.cl-badge-now  { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+/* ── Sessions within a block ─────────────────────────────── */
+.cl-sessions { display: flex; flex-direction: column; }
+
+.cl-session {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.cl-session:hover       { background: var(--surface-hover); }
+.cl-session-done        { background: rgba(74,222,128,0.04); }
+.cl-session-overdue     { background: rgba(248,113,113,0.04); }
+
+.cl-session-date { min-width: 88px; flex-shrink: 0; }
+.cl-session-day  { font-weight: 600; font-size: 0.82rem; }
+.cl-session-dstr { font-size: 0.7rem; color: var(--text-muted); margin-top: 1px; }
+
+.cl-session-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+}
+
+.cl-done-check { color: var(--green); font-size: 1rem; font-weight: 800; }
+.cl-done-by    { font-size: 0.72rem; color: var(--text-muted); }
+
+.cl-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+.cl-tag-pending { background: var(--surface-hover); color: var(--text-muted); border: 1px solid var(--border); }
+.cl-tag-overdue { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+
+.cl-session-action { margin-left: auto; flex-shrink: 0; }
+
+.cl-check-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.3);
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.cl-check-btn:hover { background: rgba(74,222,128,0.22); transform: scale(1.03); }
+
+.cl-undo-btn {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.cl-undo-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* ── Team Manager ─────────────────────────────────────────── */
+.cl-mgr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.cl-teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.cl-team-card {
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cl-team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+
+.cl-team-card-name { font-weight: 700; font-size: 0.87rem; margin-bottom: 6px; }
+.cl-team-members   { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+
+.cl-team-del-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  background: none;
+  border: 1px solid rgba(248,113,113,0.25);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--red);
+  font-size: 0.65rem;
+  font-family: var(--font);
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.cl-team-del-btn:hover { opacity: 1; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cl-banner-inner   { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .cl-block-header   { flex-wrap: wrap; }
+  .cl-badge          { margin-left: 0; margin-top: 4px; }
+  .cl-session        { gap: 8px; padding: 10px 12px; }
+  .cl-session-date   { min-width: 65px; }
+  .cleaning-section  { padding: 16px 14px; }
+  .cl-teams-grid     { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}

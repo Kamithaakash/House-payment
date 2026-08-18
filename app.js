@@ -568,7 +568,7 @@ function renderTab(tab) {
     case 'expenses':  renderExpenses();  break;
     case 'members':   renderMembers();   break;
     case 'settle':    renderSettle();    break;
-    case 'history':   renderHistory();   break;
+    case 'cleaning':  renderCleaning();  break;
     case 'accounts':  renderAccounts();  break;
   }
 }
@@ -1693,6 +1693,401 @@ async function resetEverything() {
   }
 }
 
+
+// ============================================================
+// CLEANING SCHEDULE
+// ============================================================
+
+const CL_DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const CL_DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+let cleaningState = {
+  teams:    [],
+  schedule: [],
+  config:   { cleaningDays: [1, 4], startDate: '' },
+  loaded:   false,
+};
+
+const cleaningApi = {
+  getSchedule: ()             => apiFetch('/api/cleaning/schedule'),
+  createTeam:  (body)         => apiFetch('/api/cleaning/teams',    { method: 'POST',   body }),
+  deleteTeam:  (id)           => apiFetch(`/api/cleaning/teams?id=${id}`, { method: 'DELETE' }),
+  markDone:    (body)         => apiFetch('/api/cleaning/complete', { method: 'POST',   body }),
+  undoDone:    (sessionKey)   => apiFetch('/api/cleaning/complete', { method: 'DELETE', body: { sessionKey } }),
+};
+
+async function loadCleaning() {
+  const data = await cleaningApi.getSchedule();
+  cleaningState.teams    = data.teams    || [];
+  cleaningState.schedule = data.schedule || [];
+  cleaningState.config   = data.config   || { cleaningDays: [1, 4], startDate: '' };
+  cleaningState.loaded   = true;
+}
+
+async function renderCleaning() {
+  const content = document.getElementById('cleaning-content');
+  if (!content) return;
+  content.innerHTML = skeletonRows(5);
+  try {
+    await loadCleaning();
+  } catch (err) {
+    content.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Failed to load schedule</h3><p>Check your connection and try again</p></div>';
+    return;
+  }
+  _clDraw();
+}
+
+function _clDraw() {
+  const content = document.getElementById('cleaning-content');
+  if (!content) return;
+
+  const { isAdmin, currentMemberId } = getAuthUser();
+  const { teams, schedule }          = cleaningState;
+  const today                        = new Date().toISOString().slice(0, 10);
+
+  content.innerHTML = '';
+
+  // ── Empty state ───────────────────────────────────────────
+  if (teams.length === 0) {
+    content.innerHTML = `
+      <div class="empty-state" style="padding:48px 24px">
+        <div class="empty-icon">🧹</div>
+        <h3>No Cleaning Teams Yet</h3>
+        <p>${isAdmin ? 'Create teams below to start the rotating schedule.' : 'Ask the admin to set up cleaning teams.'}</p>
+      </div>`;
+    if (isAdmin) {
+      const mgr = document.createElement('div');
+      mgr.innerHTML = _clTeamManagerHtml(teams);
+      content.appendChild(mgr);
+      _clWireManager(content);
+    }
+    return;
+  }
+
+  // ── Banner: Next Cleaning ─────────────────────────────────
+  const nextPending = schedule.find(s => s.date >= today && !s.completed);
+  content.appendChild(_clBanner(nextPending, currentMemberId));
+
+  // ── Schedule Timeline ──────────────────────────────────────
+  const section = document.createElement('div');
+  section.className = 'cleaning-section';
+
+  // Group sessions into 2-week blocks
+  const blocksMap = new Map();
+  schedule.forEach(s => {
+    if (!blocksMap.has(s.blockNum)) {
+      blocksMap.set(s.blockNum, { blockNum: s.blockNum, team: s.team, sessions: [] });
+    }
+    blocksMap.get(s.blockNum).sessions.push(s);
+  });
+  const allBlocks        = [...blocksMap.values()].sort((a, b) => a.blockNum - b.blockNum);
+  const currentBlockNum  = schedule.find(s => s.date >= today)?.blockNum ?? (allBlocks[0]?.blockNum ?? 0);
+  const visibleBlocks    = allBlocks.filter(b =>
+    b.blockNum >= Math.max(0, currentBlockNum - 1) && b.blockNum <= currentBlockNum + 4
+  );
+
+  let timelineHtml = '<div class="cl-timeline">';
+  visibleBlocks.forEach(b => { timelineHtml += _clBlockHtml(b, today, currentMemberId, isAdmin, currentBlockNum); });
+  timelineHtml += '</div>';
+
+  section.innerHTML = `
+    <h2 class="card-title" style="margin-bottom:20px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <polyline points="9 14 11 16 15 12"/>
+      </svg>
+      Cleaning Rotation
+      <span class="cl-rotation-info">(${teams.length} team${teams.length !== 1 ? 's' : ''} · same team every ${teams.length * 2} weeks)</span>
+    </h2>
+    ${timelineHtml}`;
+  content.appendChild(section);
+
+  // ── Team Manager (admin) ──────────────────────────────────
+  const mgr = document.createElement('div');
+  mgr.innerHTML = _clTeamManagerHtml(teams);
+  content.appendChild(mgr);
+
+  // ── Wire events ───────────────────────────────────────────
+  content.querySelectorAll('[data-cl-done]').forEach(btn =>
+    btn.addEventListener('click', () => _clMarkDone(btn.dataset.clDone, btn.dataset.clTeam))
+  );
+  content.querySelectorAll('[data-cl-undo]').forEach(btn =>
+    btn.addEventListener('click', () => _clUndoDone(btn.dataset.clUndo))
+  );
+  _clWireManager(content);
+}
+
+function _clBanner(session, currentMemberId) {
+  const el = document.createElement('div');
+  el.className = 'cl-banner';
+  if (!session) {
+    el.innerHTML = `
+      <div class="cl-banner-inner cl-banner-settled">
+        <span style="font-size:2.2rem">🎉</span>
+        <div>
+          <div class="cl-banner-team">All Caught Up!</div>
+          <div class="cl-banner-meta">No upcoming cleaning sessions pending.</div>
+        </div>
+      </div>`;
+    return el;
+  }
+  const team        = session.team;
+  const members     = (team?.memberIds || []).map(id => state.members.find(m => m.id === id)?.name || id).join(' · ');
+  const sessionDate = new Date(session.date);
+  const today       = new Date().toISOString().slice(0, 10);
+  const dateLabel   = session.date === today
+    ? 'Today'
+    : sessionDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const isMyTeam    = team?.memberIds?.includes(currentMemberId);
+
+  el.innerHTML = `
+    <div class="cl-banner-inner" style="border-left:4px solid ${team?.color || '#10b981'}">
+      <div class="cl-banner-left">
+        <div class="cl-banner-icon">🧹</div>
+        <div>
+          <div class="cl-banner-label">Next Cleaning</div>
+          <div class="cl-banner-team" style="color:${team?.color || '#10b981'}">${team?.name || '—'}</div>
+          <div class="cl-banner-meta">${members}</div>
+          <div class="cl-banner-date">📅 ${dateLabel}</div>
+        </div>
+      </div>
+      ${isMyTeam ? `
+        <button class="btn btn-primary cl-banner-btn"
+          data-cl-done="${session.sessionKey}" data-cl-team="${team?.id || ''}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          Mark Done
+        </button>` : ''}
+    </div>`;
+  return el;
+}
+
+function _clBlockHtml(block, today, currentMemberId, isAdmin, currentBlockNum) {
+  const team = block.team;
+  if (!team) return '';
+
+  const allDone        = block.sessions.every(s => s.completed);
+  const isPastBlock    = block.sessions[block.sessions.length - 1].date < today;
+  const isCurrentBlock = block.blockNum === currentBlockNum;
+  const firstDate      = new Date(block.sessions[0].date);
+  const lastDate       = new Date(block.sessions[block.sessions.length - 1].date);
+  const rangeLabel     = `${firstDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${lastDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  const memberNames    = (team.memberIds || []).map(id => state.members.find(m => m.id === id)?.name || id).join(' · ');
+  const isMyTeam       = (team.memberIds || []).includes(currentMemberId);
+
+  let badgeHtml = '';
+  if (allDone)                    badgeHtml = '<span class="cl-badge cl-badge-done">✓ Complete</span>';
+  else if (isPastBlock)           badgeHtml = '<span class="cl-badge cl-badge-late">Incomplete</span>';
+  else if (isCurrentBlock)        badgeHtml = '<span class="cl-badge cl-badge-now">Current</span>';
+
+  let sessionsHtml = '';
+  block.sessions.forEach(s => {
+    const d        = new Date(s.date);
+    const dayName  = CL_DAY_FULL[d.getDay()];
+    const dateStr  = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const isOver   = s.date < today && !s.completed;
+
+    let statusHtml = '';
+    let actionHtml = '';
+
+    if (s.completed) {
+      statusHtml = `<span class="cl-done-check">✓</span><span class="cl-done-by">Done by <strong>${s.doneBy}</strong></span>`;
+      if (isMyTeam || isAdmin) {
+        actionHtml = `<button class="cl-undo-btn" data-cl-undo="${s.sessionKey}">↩ Undo</button>`;
+      }
+    } else if (isOver) {
+      statusHtml = '<span class="cl-tag cl-tag-overdue">⚠️ Overdue</span>';
+      if (isMyTeam) actionHtml = `<button class="cl-check-btn" data-cl-done="${s.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    } else {
+      statusHtml = '<span class="cl-tag cl-tag-pending">Pending</span>';
+      if (isMyTeam) actionHtml = `<button class="cl-check-btn" data-cl-done="${s.sessionKey}" data-cl-team="${team.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg> Mark Done</button>`;
+    }
+
+    sessionsHtml += `
+      <div class="cl-session ${s.completed ? 'cl-session-done' : ''} ${isOver ? 'cl-session-overdue' : ''}">
+        <div class="cl-session-date">
+          <div class="cl-session-day">${dayName}</div>
+          <div class="cl-session-dstr">${dateStr}</div>
+        </div>
+        <div class="cl-session-status">${statusHtml}</div>
+        <div class="cl-session-action">${actionHtml}</div>
+      </div>`;
+  });
+
+  return `
+    <div class="cl-block ${allDone ? 'cl-block-done' : ''} ${isPastBlock && !allDone ? 'cl-block-overdue' : ''} ${isCurrentBlock ? 'cl-block-current' : ''}">
+      <div class="cl-block-header" style="border-left:3px solid ${team.color}">
+        <div class="cl-block-dot" style="background:${team.color}"></div>
+        <div class="cl-block-info">
+          <div class="cl-block-name" style="color:${team.color}">${team.name}</div>
+          <div class="cl-block-meta">${memberNames} · ${rangeLabel}</div>
+        </div>
+        ${badgeHtml}
+      </div>
+      <div class="cl-sessions">${sessionsHtml}</div>
+    </div>`;
+}
+
+function _clTeamManagerHtml(teams) {
+  const { isAdmin } = getAuthUser();
+  if (!isAdmin) return '';
+
+  const cards = teams.map(t => {
+    const members = (t.memberIds || [])
+      .map(id => state.members.find(m => m.id === id)?.name || id)
+      .join(', ') || '<em>No members</em>';
+    return `
+      <div class="cl-team-card" style="border-top:3px solid ${t.color}">
+        <div class="cl-team-card-name" style="color:${t.color}">${t.name}</div>
+        <div class="cl-team-members">${members}</div>
+        <button class="cl-team-del-btn" data-cl-del="${t.id}" title="Delete team">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+          </svg>
+          Delete
+        </button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="cleaning-section" style="margin-top:20px">
+      <div class="cl-mgr-header">
+        <h2 class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+          Manage Teams
+        </h2>
+        <button class="btn btn-primary" id="cl-add-team-btn" style="padding:8px 16px;font-size:0.82rem">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Create Team
+        </button>
+      </div>
+      <div class="cl-teams-grid">
+        ${teams.length ? cards : '<div style="color:var(--text-muted);font-size:0.82rem;text-align:center;padding:20px 0">No teams yet. Create your first team!</div>'}
+      </div>
+    </div>`;
+}
+
+function _clWireManager(container) {
+  const addBtn = container.querySelector('#cl-add-team-btn');
+  if (addBtn) addBtn.addEventListener('click', _clOpenTeamModal);
+  container.querySelectorAll('[data-cl-del]').forEach(btn =>
+    btn.addEventListener('click', () => _clDeleteTeam(btn.dataset.clDel))
+  );
+}
+
+async function _clMarkDone(sessionKey, teamId) {
+  try {
+    await cleaningApi.markDone({ sessionKey, teamId });
+    toast('✅ Cleaning session marked as done!');
+    await loadCleaning();
+    _clDraw();
+  } catch (err) { toast(err.message || 'Failed to mark done', 'error'); }
+}
+
+async function _clUndoDone(sessionKey) {
+  const ok = await showConfirm('Undo Cleaning', 'Mark this session as not done?');
+  if (!ok) return;
+  try {
+    await cleaningApi.undoDone(sessionKey);
+    toast('↩️ Session undone');
+    await loadCleaning();
+    _clDraw();
+  } catch (err) { toast(err.message || 'Failed to undo', 'error'); }
+}
+
+async function _clDeleteTeam(id) {
+  const team = cleaningState.teams.find(t => t.id === id);
+  if (!team) return;
+  const ok = await showConfirm('Delete Team', `Remove "${team.name}" from the cleaning schedule? This cannot be undone.`);
+  if (!ok) return;
+  try {
+    await cleaningApi.deleteTeam(id);
+    toast(`Team "${team.name}" deleted`);
+    await loadCleaning();
+    _clDraw();
+  } catch (err) { toast(err.message || 'Failed to delete team', 'error'); }
+}
+
+// ── Cleaning Team Modal ───────────────────────────────────────
+let _clSelectedColor = MEMBER_COLORS[0];
+
+function _clOpenTeamModal() {
+  // Populate member checkboxes
+  const cbBox = document.getElementById('cl-team-member-checkboxes');
+  if (cbBox) {
+    cbBox.innerHTML = '';
+    state.members.forEach(m => {
+      const chip = document.createElement('label');
+      chip.className = 'check-chip';
+      chip.innerHTML = `
+        <input type="checkbox" value="${m.id}" />
+        <span class="chip-dot" style="background:${m.color}"></span>
+        ${m.name}`;
+      const cb = chip.querySelector('input');
+      cb.addEventListener('change', () => chip.classList.toggle('selected', cb.checked));
+      cbBox.appendChild(chip);
+    });
+  }
+  // Color picker
+  _clSelectedColor = MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)];
+  const pickerEl = document.getElementById('cl-team-color-picker');
+  if (pickerEl) {
+    pickerEl.innerHTML = '';
+    MEMBER_COLORS.forEach(c => {
+      const sw = document.createElement('div');
+      sw.className = `color-swatch ${c === _clSelectedColor ? 'selected' : ''}`;
+      sw.style.background = c;
+      sw.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+      sw.addEventListener('click', () => {
+        _clSelectedColor = c;
+        pickerEl.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+        sw.classList.add('selected');
+      });
+      pickerEl.appendChild(sw);
+    });
+  }
+  const nameInput = document.getElementById('cl-team-name');
+  if (nameInput) nameInput.value = '';
+  document.getElementById('cl-team-modal-overlay')?.classList.add('open');
+}
+
+function _clCloseTeamModal() {
+  document.getElementById('cl-team-modal-overlay')?.classList.remove('open');
+}
+
+async function _clSaveTeam(e) {
+  e.preventDefault();
+  const name = document.getElementById('cl-team-name')?.value.trim();
+  if (!name) return;
+  const memberIds = [...document.querySelectorAll('#cl-team-member-checkboxes .check-chip input:checked')]
+    .map(i => i.value);
+  if (!memberIds.length) { toast('Select at least one member for the team', 'error'); return; }
+
+  const submitBtn = document.getElementById('cl-team-submit-btn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creating…'; }
+  try {
+    await cleaningApi.createTeam({ name, memberIds, color: _clSelectedColor });
+    _clCloseTeamModal();
+    toast(`Team "${name}" created! 🎉`);
+    await loadCleaning();
+    _clDraw();
+  } catch (err) {
+    toast(err.message || 'Failed to create team', 'error');
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Create Team'; }
+  }
+}
+
 // ============================================================
 // EVENT LISTENERS
 // ============================================================
@@ -1995,6 +2390,16 @@ async function requestPushPermission() {
     });
   }
 
+
+  // Cleaning team modal wiring
+  const clForm = document.getElementById('cl-team-form');
+  if (clForm) clForm.addEventListener('submit', _clSaveTeam);
+  const clClose = document.getElementById('cl-team-modal-close');
+  if (clClose) clClose.addEventListener('click', _clCloseTeamModal);
+  const clCancel = document.getElementById('cl-team-cancel-btn');
+  if (clCancel) clCancel.addEventListener('click', _clCloseTeamModal);
+  const clOverlay = document.getElementById('cl-team-modal-overlay');
+  if (clOverlay) clOverlay.addEventListener('click', e => { if (e.target === clOverlay) _clCloseTeamModal(); });
 
   // Load data from MongoDB, then render
   await loadAll();

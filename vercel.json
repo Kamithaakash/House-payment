@@ -26,6 +26,10 @@
       "dest": "/api/reminders.js"
     },
     {
+      "src": "/api/cleaning/(.*)",
+      "dest": "/api/cleaning.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },

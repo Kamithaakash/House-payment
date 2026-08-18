@@ -73,12 +73,15 @@
           </svg>
           Settle Up
         </button>
-        <button class="tab-btn" data-tab="history" id="tab-history">
+        <button class="tab-btn" data-tab="cleaning" id="tab-cleaning">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <polyline points="9 14 11 16 15 12"/>
           </svg>
-          History
+          Cleaning
         </button>
 
         <span class="nav-section-label admin-only">Admin</span>
@@ -262,13 +265,13 @@
           <div id="settle-actions" class="settle-actions"></div>
         </section>
 
-        <!-- HISTORY TAB -->
-        <section class="tab-panel" id="panel-history">
+        <!-- CLEANING SCHEDULE TAB -->
+        <section class="tab-panel" id="panel-cleaning">
           <div class="page-heading">
-            <h1>History</h1>
-            <p>A record of all past settlements.</p>
+            <h1>Cleaning Schedule</h1>
+            <p>Rotating twice-weekly roster &mdash; each team handles a 2-week block.</p>
           </div>
-          <div id="history-list" class="history-list"></div>
+          <div id="cleaning-content"></div>
         </section>
 
         <!-- ACCOUNTS TAB (Admin Only) -->
@@ -361,12 +364,14 @@
         </svg>
         Settle
       </button>
-      <button class="tab-btn" data-tab="history">
+      <button class="tab-btn" data-tab="cleaning">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" />
-          <polyline points="12 6 12 12 16 14" />
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <polyline points="9 14 11 16 15 12"/>
         </svg>
-        History
+        Cleaning
       </button>
       <button class="tab-btn admin-only" data-tab="accounts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -620,6 +625,38 @@
     </div>
   </div>
 
+  <!-- Cleaning Team Creation Modal (Admin Only) -->
+  <div class="modal-overlay" id="cl-team-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="cl-team-modal-title">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="cl-team-modal-title">Create Cleaning Team</h3>
+        <button class="btn-icon modal-close" id="cl-team-modal-close" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <form id="cl-team-form" class="modal-form">
+        <div class="form-group">
+          <label class="form-label" for="cl-team-name">Team Name</label>
+          <input type="text" id="cl-team-name" class="input-field" placeholder="e.g. Team Alpha" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Select Members</label>
+          <div id="cl-team-member-checkboxes" class="checkbox-group"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Team Color</label>
+          <div id="cl-team-color-picker" class="color-picker"></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-ghost" id="cl-team-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="cl-team-submit-btn">Create Team</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast" class="toast" aria-live="polite"></div>
 
@@ -694,7 +731,7 @@
         expenses: 'Expenses',
         members: 'Members',
         settle: 'Settle Up',
-        history: 'History',
+        cleaning: 'Cleaning Schedule',
         accounts: 'User Accounts'
       };
       document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
